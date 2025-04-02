@@ -8,8 +8,9 @@ plugins {
 android {
     namespace = "com.example.telemetri"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
-
+    // ndkVersion = flutter.ndkVersion
+    ndkVersion = "29.0.13113456"
+    
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
