@@ -35,25 +35,17 @@ class _MainContainerState extends State<MainContainer> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const CalendarScreen(),
-    // ScanQR is handled separately
     const HistoryScreen(),
     const ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
     if (index == 2) {
-      // This is correct - handling ScanQR separately
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ScanQRScreen()),
       );
       return;
-    }
-
-    // Fix the screen index calculation
-    int screenIndex = index;
-    if (index > 2) {
-      screenIndex = index - 1;
     }
 
     setState(() {
