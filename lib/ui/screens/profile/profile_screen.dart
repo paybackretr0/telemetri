@@ -3,9 +3,12 @@ import 'package:telemetri/ui/widgets/custom_card.dart';
 import 'package:provider/provider.dart';
 import 'package:telemetri/ui/screens/profile/profile_provider.dart';
 import 'package:telemetri/ui/navigations/app_routes.dart';
+import 'package:telemetri/ui/screens/permission/permission_screen.dart';
+import 'package:telemetri/ui/screens/faq/faq_screen.dart';
+import 'package:telemetri/ui/screens/about/about_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +32,12 @@ class ProfileScreen extends StatelessWidget {
                       Icons.assignment_late_rounded,
                       Colors.orange,
                       () {
-                        // Navigasi ke halaman pengajuan izin
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PermissionScreen(),
+                          ),
+                        );
                       },
                     ),
                   ),
@@ -107,7 +115,7 @@ class ProfileScreen extends StatelessWidget {
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildSectionTitle(context, 'Pengaturan & Informasi'),
+              child: _buildSectionTitle(context, 'Informasi'),
             ),
             const SizedBox(height: 12),
 
@@ -116,7 +124,12 @@ class ProfileScreen extends StatelessWidget {
               child: Column(
                 children: [
                   _buildInfoCard(context, 'FAQ', Icons.help_outline, () {
-                    // Navigate to FAQ page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const FaqScreen(),
+                      ),
+                    );
                   }),
                   const SizedBox(height: 12),
                   _buildInfoCard(
@@ -124,7 +137,12 @@ class ProfileScreen extends StatelessWidget {
                     'Tentang Aplikasi',
                     Icons.info_outline,
                     () {
-                      // Navigate to About page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AboutScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -509,37 +527,64 @@ class ProfileScreen extends StatelessWidget {
               : () {
                 showDialog(
                   context: context,
+                  barrierDismissible: false,
                   builder:
-                      (context) => AlertDialog(
+                      (dialogContext) => AlertDialog(
                         title: const Text('Konfirmasi'),
                         content: const Text('Apakah Anda yakin ingin keluar?'),
                         actions: [
                           TextButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed:
+                                profileProvider.isLoading
+                                    ? null
+                                    : () => Navigator.pop(dialogContext),
                             child: const Text('Batal'),
                           ),
                           TextButton(
-                            onPressed: () async {
-                              Navigator.pop(context);
+                            onPressed:
+                                profileProvider.isLoading
+                                    ? null
+                                    : () async {
+                                      Navigator.pop(dialogContext);
 
-                              final success = await profileProvider.logout();
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder:
+                                            (loadingContext) => const Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
+                                      );
 
-                              if (success && context.mounted) {
-                                Navigator.of(context).pushNamedAndRemoveUntil(
-                                  RouteNames.login,
-                                  (route) => false,
-                                );
-                              } else if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      profileProvider.error ?? 'Logout failed',
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            },
+                                      final success =
+                                          await profileProvider.logout();
+
+                                      if (context.mounted) {
+                                        Navigator.pop(context);
+
+                                        if (success) {
+                                          Navigator.of(
+                                            context,
+                                          ).pushNamedAndRemoveUntil(
+                                            RouteNames.login,
+                                            (route) => false,
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                profileProvider.error ??
+                                                    'Logout failed',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
                             child: const Text(
                               'Keluar',
                               style: TextStyle(color: Colors.red),

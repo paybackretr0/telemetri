@@ -9,7 +9,10 @@ class AuthRepository {
   final http.Client _client = http.Client();
   final SecureStorage _storage = SecureStorage();
 
-  Future<ApiResponse<User>> signInWithGoogle(String idToken) async {
+  Future<ApiResponse<User>> signInWithGoogle(
+    String idToken,
+    String accessToken,
+  ) async {
     try {
       final response = await _client.post(
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.googleLogin}'),
@@ -17,7 +20,11 @@ class AuthRepository {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({'id_token': idToken}),
+        body: jsonEncode({
+          'id_token': idToken,
+          'access_token':
+              accessToken, // Tambahkan access_token untuk akses Calendar
+        }),
       );
 
       final data = jsonDecode(response.body);
@@ -31,6 +38,10 @@ class AuthRepository {
         await _storage.write(ApiConfig.userNameKey, user.name);
         await _storage.write(ApiConfig.userEmailKey, user.email);
         await _storage.write(ApiConfig.userRoleKey, user.role);
+        await _storage.write(
+          ApiConfig.googleTokenKey,
+          accessToken,
+        ); // Simpan Google token
 
         return ApiResponse(
           success: true,
@@ -50,10 +61,29 @@ class AuthRepository {
 
   Future<ApiResponse<void>> logout() async {
     try {
+      final token = await _storage.read(ApiConfig.accessTokenKey);
+      if (token != null) {
+        // Call the logout API endpoint
+        final response = await _client.post(
+          Uri.parse('${ApiConfig.baseUrl}${ApiConfig.logout}'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        );
+
+        // Log the response for debugging
+        print('Logout API response: ${response.statusCode} - ${response.body}');
+      }
+
+      // Clear local storage regardless of API response
       await _storage.deleteAll();
 
       return ApiResponse(success: true, message: 'Logout successful');
     } catch (e) {
+      print('Logout error: $e');
+      // Still clear storage even if API call fails
+      await _storage.deleteAll();
       return ApiResponse(success: false, message: 'Logout failed: $e');
     }
   }
@@ -69,7 +99,6 @@ class AuthRepository {
       final name = await _storage.read(ApiConfig.userNameKey);
       final email = await _storage.read(ApiConfig.userEmailKey);
       final role = await _storage.read(ApiConfig.userRoleKey);
-
       if (id != null && name != null && email != null && role != null) {
         return User(id: int.parse(id), name: name, email: email, role: role);
       }

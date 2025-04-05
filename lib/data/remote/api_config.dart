@@ -2,9 +2,16 @@ import '../../../data/environment/env_config.dart';
 
 class ApiConfig {
   static const String baseUrl = EnvConfig.apiBaseUrl;
+
   static const String googleLogin = 'auth/google-flutter';
   static const String logout = 'auth/logout';
   static const String refresh = 'auth/refresh';
+
+  static const String activities = 'activities';
+
+  static const String permissions = 'permissions';
+  static const String myPermissions = 'permissions/my';
+  static const String processPermission = 'permissions/{id}/process';
 
   static const int statusOk = 200;
   static const int statusCreated = 201;
@@ -21,4 +28,5 @@ class ApiConfig {
   static const String userNameKey = 'user_name';
   static const String userEmailKey = 'user_email';
   static const String userRoleKey = 'user_role';
+  static const String googleTokenKey = 'google_token';
 }

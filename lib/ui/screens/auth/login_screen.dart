@@ -5,7 +5,7 @@ import 'package:telemetri/ui/navigations/app_routes.dart';
 import 'package:flutter/services.dart';
 
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +16,7 @@ class LoginScreen extends StatelessWidget {
       ),
     );
     return Scaffold(
-      body: Consumer<AuthProvider>(
+      body: Consumer<LoginProvider>(
         builder: (context, auth, _) {
           if (auth.isLoading) {
             return const Center(
@@ -124,7 +124,7 @@ class LoginScreen extends StatelessWidget {
 
   Future<void> _handleGoogleSignIn(
     BuildContext context,
-    AuthProvider auth,
+    LoginProvider auth,
   ) async {
     final success = await auth.signInWithGoogle();
 

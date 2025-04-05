@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:telemetri/ui/screens/faq/faq_screen.dart';
 import 'package:telemetri/ui/screens/splash/splash_screen.dart';
 import 'package:telemetri/ui/screens/home/home_screen.dart';
 import 'package:telemetri/ui/screens/auth/login_screen.dart';
@@ -8,6 +9,7 @@ import 'package:telemetri/ui/screens/attendance/scan_qr_screen.dart';
 import 'package:telemetri/ui/screens/history/history_screen.dart';
 import 'package:telemetri/ui/screens/profile/profile_screen.dart';
 import 'package:telemetri/ui/screens/notification/notification_screen.dart';
+import 'package:telemetri/ui/screens/about/about_screen.dart';
 
 class RouteNames {
   static const main = '/main';
@@ -19,6 +21,8 @@ class RouteNames {
   static const history = '/history';
   static const profile = '/profile';
   static const notification = '/notification';
+  static const faq = '/faq';
+  static const about = '/about';
 }
 
 class AppRoutes {
@@ -47,6 +51,10 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case RouteNames.notification:
         return MaterialPageRoute(builder: (_) => const NotificationScreen());
+      case RouteNames.faq:
+        return MaterialPageRoute(builder: (_) => const FaqScreen());
+      case RouteNames.about:
+        return MaterialPageRoute(builder: (_) => const AboutScreen());
       default:
         return MaterialPageRoute(
           builder:
