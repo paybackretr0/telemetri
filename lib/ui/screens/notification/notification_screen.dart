@@ -3,7 +3,7 @@ import 'package:telemetri/ui/widgets/custom_appbar.dart';
 import 'package:telemetri/ui/widgets/custom_card.dart';
 
 class NotificationScreen extends StatefulWidget {
-  const NotificationScreen({Key? key}) : super(key: key);
+  const NotificationScreen({super.key});
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();

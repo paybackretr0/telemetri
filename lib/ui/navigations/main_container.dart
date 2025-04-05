@@ -9,7 +9,7 @@ import 'package:telemetri/ui/widgets/custom_appbar.dart';
 
 class MainContainer extends StatefulWidget {
   final int initialIndex;
-  const MainContainer({Key? key, this.initialIndex = 0}) : super(key: key);
+  const MainContainer({super.key, this.initialIndex = 0});
 
   @override
   State<MainContainer> createState() => _MainContainerState();

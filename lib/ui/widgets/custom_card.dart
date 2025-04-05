@@ -16,7 +16,7 @@ class CustomCard extends StatelessWidget {
     this.margin = const EdgeInsets.only(bottom: 12.0),
     this.elevation = 2.0,
     this.borderRadius,
-    this.color,
+    this.color = Colors.white,
     this.onTap,
   }) : super(key: key);
 

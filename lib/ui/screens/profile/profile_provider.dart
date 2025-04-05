@@ -17,13 +17,22 @@ class ProfileProvider extends ChangeNotifier {
   String? get error => _error;
 
   Future<bool> logout() async {
+    if (_isLoading) return false; // Prevent multiple logout attempts
+
     try {
       _setLoading(true);
       _clearError();
 
-      final response = await _authRepository.logout();
+      // First sign out from Google - make sure this completes
+      try {
+        await _googleSignIn.disconnect();
+      } catch (e) {
+        print('Google sign out error: $e');
+        // Continue with logout even if Google sign out fails
+      }
 
-      await _googleSignIn.signOut();
+      // Then call the backend to logout
+      final response = await _authRepository.logout();
 
       if (response.success) {
         return true;
