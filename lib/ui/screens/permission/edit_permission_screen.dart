@@ -8,6 +8,7 @@ import '../../../data/models/permission_model.dart';
 import '../../../data/models/activity_model.dart';
 import '../../widgets/custom_appbar.dart';
 import '../../../utils/date_formatter.dart';
+import '../../widgets/custom_form_fields.dart';
 
 class EditPermissionScreen extends StatefulWidget {
   final Permission permission;
@@ -139,12 +140,7 @@ class _EditPermissionScreenState extends State<EditPermissionScreen> {
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedActivityId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Silakan pilih kegiatan'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CustomDialogs.showErrorSnackBar(context, 'Silakan pilih kegiatan');
         return;
       }
 
@@ -156,6 +152,17 @@ class _EditPermissionScreenState extends State<EditPermissionScreen> {
           _selectedActivityId != widget.permission.activityId;
 
       if (reasonChanged || activityChanged || _attachmentChanged) {
+        final confirmed = await CustomDialogs.showConfirmationDialog(
+          context: context,
+          title: 'Konfirmasi Perubahan',
+          message: 'Apakah Anda yakin ingin menyimpan perubahan ini?',
+          confirmText: 'Simpan',
+          confirmColor: Theme.of(context).primaryColor,
+          confirmIcon: Icons.save,
+        );
+
+        if (confirmed != true) return;
+
         final result = await provider.updatePermission(
           id: widget.permission.id,
           activityId: activityChanged ? _selectedActivityId : null,
@@ -163,18 +170,13 @@ class _EditPermissionScreenState extends State<EditPermissionScreen> {
           attachment: _attachmentChanged ? _attachmentFile : null,
         );
 
-        if (result) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(provider.successMessage)));
-          Navigator.pop(context, true);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(provider.errorMessage),
-              backgroundColor: Colors.red,
-            ),
-          );
+        if (mounted) {
+          if (result) {
+            CustomDialogs.showSuccessSnackBar(context, provider.successMessage);
+            Navigator.pop(context, true);
+          } else {
+            CustomDialogs.showErrorSnackBar(context, provider.errorMessage);
+          }
         }
       } else {
         Navigator.pop(context);
@@ -206,16 +208,9 @@ class _EditPermissionScreenState extends State<EditPermissionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Kegiatan',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Pilih Kegiatan',
-                    ),
+                  CustomDropdownField<int>(
+                    label: 'Kegiatan',
+                    hint: 'Pilih Kegiatan',
                     value: _selectedActivityId,
                     items:
                         activities.map((activity) {
@@ -234,17 +229,11 @@ class _EditPermissionScreenState extends State<EditPermissionScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Alasan',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
+
+                  CustomTextField(
+                    label: 'Alasan',
+                    hint: 'Berikan alasan izin Anda',
                     controller: _reasonController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Berikan alasan izin Anda',
-                    ),
                     maxLines: 5,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -254,60 +243,41 @@ class _EditPermissionScreenState extends State<EditPermissionScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Lampiran (Opsional)',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  InkWell(
+
+                  CustomAttachmentField(
+                    label: 'Lampiran (Opsional)',
                     onTap: _pickAttachment,
-                    child: Container(
-                      height: 100,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child:
-                          (_attachmentFile != null ||
-                                  _attachmentFileName != null)
-                              ? _buildAttachmentPreview()
-                              : const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.upload_file,
-                                      size: 32,
-                                      color: Colors.grey,
+                    child:
+                        (_attachmentFile != null || _attachmentFileName != null)
+                            ? _buildAttachmentPreview()
+                            : Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.upload_file,
+                                    size: 32,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Tap untuk memilih file',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
                                     ),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      'Tap untuk memilih file',
-                                      style: TextStyle(color: Colors.grey),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                    ),
+                            ),
                   ),
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed:
-                          provider.updatePermissionStatus ==
-                                  PermissionStatus.loading
-                              ? null
-                              : _submitForm,
-                      child:
-                          provider.updatePermissionStatus ==
-                                  PermissionStatus.loading
-                              ? const CircularProgressIndicator()
-                              : const Text('Simpan Perubahan'),
-                    ),
+
+                  CustomSubmitButton(
+                    text: 'Simpan Perubahan',
+                    isLoading:
+                        provider.updatePermissionStatus ==
+                        PermissionStatus.loading,
+                    onPressed: _submitForm,
                   ),
                 ],
               ),

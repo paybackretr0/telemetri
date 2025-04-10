@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'permission_provider.dart';
 import '../../../data/models/activity_model.dart';
 import '../../widgets/custom_appbar.dart';
+import '../../widgets/custom_form_fields.dart';
 
 class CreatePermissionScreen extends StatefulWidget {
   const CreatePermissionScreen({super.key});
@@ -21,7 +22,6 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
   int? _selectedActivityId;
   File? _attachmentFile;
   String? _attachmentFileName;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -34,9 +34,7 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
   Future<void> _fetchActivities() async {
     if (!mounted) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() {});
 
     await Provider.of<PermissionProvider>(
       context,
@@ -44,9 +42,7 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
     ).getActivities();
 
     if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() {});
     }
   }
 
@@ -127,26 +123,27 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedActivityId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Silakan pilih kegiatan'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CustomDialogs.showErrorSnackBar(context, 'Silakan pilih kegiatannya');
         return;
       }
 
+      final confirmed = await CustomDialogs.showConfirmationDialog(
+        context: context,
+        title: 'Konfirmasi Pengajuan Izin',
+        message: 'Apakah Anda yakin ingin mengajukan izin ini?',
+        confirmText: 'Ajukan',
+        confirmColor: Theme.of(context).primaryColor,
+        confirmIcon: Icons.send,
+      );
+
+      if (confirmed != true) return;
+
       try {
-        // Pastikan activityId selalu integer
         final int activityId = _selectedActivityId!;
 
         final provider = Provider.of<PermissionProvider>(
           context,
           listen: false,
-        );
-
-        print(
-          'Submitting permission with activityId: $activityId (${activityId.runtimeType})',
         );
 
         final result = await provider.createPermission(
@@ -155,27 +152,18 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
           attachment: _attachmentFile,
         );
 
-        if (result) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(provider.successMessage)));
-          Navigator.pop(context, true);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(provider.errorMessage),
-              backgroundColor: Colors.red,
-            ),
-          );
+        if (mounted) {
+          if (result) {
+            CustomDialogs.showSuccessSnackBar(context, provider.successMessage);
+            Navigator.pop(context, true);
+          } else {
+            CustomDialogs.showErrorSnackBar(context, provider.errorMessage);
+          }
         }
       } catch (e) {
-        print('Error in _submitForm: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Terjadi kesalahan: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          CustomDialogs.showErrorSnackBar(context, 'Gagal membuat izin');
+        }
       }
     }
   }
@@ -186,8 +174,7 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
       appBar: CustomAppBar(
         title: 'Buat Izin Baru',
         showBackButton: true,
-        showNotification:
-            false, // Usually don't need notifications on form screens
+        showNotification: false,
       ),
       body: Consumer<PermissionProvider>(
         builder: (context, provider, child) {
@@ -247,39 +234,18 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Kegiatan',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Pilih Kegiatan',
-                    ),
+                  CustomDropdownField<int>(
+                    label: 'Kegiatan',
+                    hint: 'Pilih Kegiatan',
                     value: _selectedActivityId,
                     items:
                         activities.map((activity) {
-                          // Pastikan ID activity selalu dalam bentuk integer
                           int activityId;
                           try {
-                            if (activity.id is int) {
-                              activityId = activity.id;
-                            } else if (activity.id is String) {
-                              activityId = int.parse(activity.id.toString());
-                            } else {
-                              activityId = 0;
-                              print(
-                                'Unrecognized ID type: ${activity.id.runtimeType}',
-                              );
-                            }
+                            activityId = activity.id;
                           } catch (e) {
                             activityId = 0;
-                            print(
-                              'Error parsing activity ID: ${activity.id}, error: $e',
-                            );
                           }
-                          // Make sure we're using the correct ID type
                           return DropdownMenuItem<int>(
                             value: activityId,
                             child: Text(
@@ -291,24 +257,15 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
                     onChanged: (value) {
                       setState(() {
                         _selectedActivityId = value;
-                        print(
-                          'Selected activity ID: $value (${value?.runtimeType})',
-                        );
                       });
                     },
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Alasan',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
+
+                  CustomTextField(
+                    label: 'Alasan',
+                    hint: 'Berikan alasan izin Anda',
                     controller: _reasonController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Berikan alasan izin Anda',
-                    ),
                     maxLines: 5,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -318,68 +275,41 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Lampiran (Opsional)',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  InkWell(
+
+                  CustomAttachmentField(
+                    label: 'Lampiran (Opsional)',
                     onTap: _pickAttachment,
-                    child: Container(
-                      height: 100,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child:
-                          _attachmentFile != null
-                              ? _buildAttachmentPreview()
-                              : Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.upload_file,
-                                      size: 32,
-                                      color: Theme.of(context).primaryColor,
+                    child:
+                        _attachmentFile != null
+                            ? _buildAttachmentPreview()
+                            : Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.upload_file,
+                                    size: 32,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Tap untuk memilih file',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Tap untuk memilih file',
-                                      style: TextStyle(
-                                        color: Theme.of(context).primaryColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                    ),
+                            ),
                   ),
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        backgroundColor:
-                            Theme.of(
-                              context,
-                            ).primaryColor, // Set button background to primary color
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed:
-                          provider.createPermissionStatus ==
-                                  PermissionStatus.loading
-                              ? null
-                              : _submitForm,
-                      child:
-                          provider.createPermissionStatus ==
-                                  PermissionStatus.loading
-                              ? const CircularProgressIndicator()
-                              : const Text('Kirim Izin'),
-                    ),
+
+                  CustomSubmitButton(
+                    text: 'Kirim Izin',
+                    isLoading:
+                        provider.createPermissionStatus ==
+                        PermissionStatus.loading,
+                    onPressed: _submitForm,
                   ),
                 ],
               ),
@@ -390,7 +320,6 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
     );
   }
 
-  // Helper untuk memformat DateTime ke format yang lebih user-friendly
   String _formatDateTime(DateTime dateTime) {
     return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
@@ -400,7 +329,6 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
 
     final extension = _attachmentFileName?.split('.').last.toLowerCase() ?? '';
 
-    // If image, show preview
     if (['jpg', 'jpeg', 'png'].contains(extension)) {
       return Stack(
         children: [
@@ -424,7 +352,6 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
       );
     }
 
-    // For other files, show file name
     return Stack(
       children: [
         Center(

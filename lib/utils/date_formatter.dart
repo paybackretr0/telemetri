@@ -30,6 +30,14 @@ class DateFormatter {
     }
   }
 
+  static String formatTime(DateTime time) {
+    try {
+      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return 'Waktu tidak valid';
+    }
+  }
+
   static String formatDateTimeIndonesia(DateTime date) {
     try {
       String tanggal = '${date.day} ${_namaBulan[date.month - 1]} ${date.year}';

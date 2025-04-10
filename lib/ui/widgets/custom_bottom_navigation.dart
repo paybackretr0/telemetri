@@ -6,11 +6,11 @@ class CustomBottomNavigation extends StatelessWidget {
   final bool showLabels;
 
   const CustomBottomNavigation({
-    Key? key,
+    super.key,
     required this.selectedIndex,
     required this.onItemTapped,
     this.showLabels = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

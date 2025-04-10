@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:telemetri/ui/screens/delegation/delegation_screen.dart';
 import 'package:telemetri/ui/widgets/custom_card.dart';
 import 'package:provider/provider.dart';
 import 'package:telemetri/ui/screens/profile/profile_provider.dart';
@@ -49,7 +50,12 @@ class ProfileScreen extends StatelessWidget {
                       Icons.swap_horiz_rounded,
                       Colors.green,
                       () {
-                        // Navigasi ke halaman pergantian piket
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DelegationScreen(),
+                          ),
+                        );
                       },
                     ),
                   ),
