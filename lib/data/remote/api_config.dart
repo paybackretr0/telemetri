@@ -11,7 +11,15 @@ class ApiConfig {
 
   static const String permissions = 'permissions';
   static const String myPermissions = 'permissions/my';
-  static const String processPermission = 'permissions/{id}/process';
+
+  static const String delegations = 'delegations';
+  static const String myDelegations = 'delegations/my';
+  static const String processDelegations = 'delegations/process/{id}';
+
+  static const String myDutySchedules = 'duty-schedules/my';
+  static const String getDelegableDutySchedules = 'duty-schedules/delegable';
+  static const String getPotentialDelegates =
+      'duty-schedules/potential-delegates';
 
   static const int statusOk = 200;
   static const int statusCreated = 201;

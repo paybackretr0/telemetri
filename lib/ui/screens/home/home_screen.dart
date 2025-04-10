@@ -30,8 +30,8 @@ class _HomeScreenState extends State<HomeScreen> {
               BarChartData(
                 alignment: BarChartAlignment.spaceBetween,
                 maxY: 100,
-                barGroups: List.generate(6, (index) {
-                  final data = [85, 90, 75, 95, 80, 88];
+                barGroups: List.generate(12, (index) {
+                  final data = [85, 90, 75, 95, 80, 88, 92, 78, 83, 89, 91, 87];
                   return BarChartGroupData(
                     x: index,
                     barRods: [
@@ -42,8 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
                         ),
-                        width: 20,
-                        borderRadius: BorderRadius.circular(12),
+                        width: 14,
+                        borderRadius: BorderRadius.circular(8),
                         backDrawRodData: BackgroundBarChartRodData(
                           show: true,
                           toY: 100,
@@ -66,20 +66,28 @@ class _HomeScreenState extends State<HomeScreen> {
                           'Apr',
                           'Mei',
                           'Jun',
+                          'Jul',
+                          'Agu',
+                          'Sep',
+                          'Okt',
+                          'Nov',
+                          'Des',
                         ];
                         return SideTitleWidget(
                           meta: meta,
-                          space: 8,
+                          space: 4,
+                          angle: 0.3,
                           child: Text(
                             titles[value.toInt()],
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF555555),
                             ),
                           ),
                         );
                       },
+                      reservedSize: 28,
                     ),
                   ),
                   leftTitles: AxisTitles(
@@ -249,7 +257,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Dummy today's activities data
     final List<Map<String, dynamic>> todayActivities = [
       {
         'id': '1',
@@ -265,7 +272,6 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ];
 
-    // Dummy attendance status data
     final List<Map<String, dynamic>> attendanceStatus = [
       {
         'id': '1',
@@ -303,9 +309,36 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(16.0),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
+                  CustomCard(
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage: AssetImage(
+                            'assets/images/default_profile.png',
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Halo, [Nama User]',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   _buildAttendanceGraph(),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
 
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -319,10 +352,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(
+                          Navigator.pushReplacementNamed(
                             context,
                             RouteNames.main,
-                            arguments: {'initialIndex': 2},
+                            arguments: {'initialIndex': 1},
                           );
                         },
                         child: Text(
@@ -365,7 +398,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Latest Attendance Status
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -377,7 +409,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(
+                            context,
+                            RouteNames.main,
+                            arguments: {'initialIndex': 3},
+                          );
+                        },
                         child: Text(
                           'Lihat Semua',
                           style: TextStyle(

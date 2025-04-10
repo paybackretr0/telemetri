@@ -8,6 +8,7 @@ import 'edit_permission_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../data/models/activity_model.dart';
 import '../../widgets/custom_appbar.dart';
+import '../../widgets/custom_form_fields.dart';
 import '../../../data/environment/env_config.dart';
 import '../../../utils/date_formatter.dart';
 
@@ -396,7 +397,6 @@ class _PermissionDetailScreenState extends State<PermissionDetailScreen> {
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
-                // Only show open button for non-image files
                 if (!isImage)
                   IconButton(
                     icon: Icon(
@@ -603,17 +603,17 @@ class _PermissionDetailScreenState extends State<PermissionDetailScreen> {
       } else if (await canLaunch(uri.toString())) {
         await launch(uri.toString(), forceSafariVC: false, forceWebView: false);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tidak dapat membuka lampiran'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          CustomDialogs.showErrorSnackBar(
+            context,
+            'Tidak dapat membuka lampiran',
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        CustomDialogs.showErrorSnackBar(context, 'Error: $e');
+      }
     }
   }
 
@@ -638,11 +638,12 @@ class _PermissionDetailScreenState extends State<PermissionDetailScreen> {
                 onPressed: () {
                   Navigator.pop(context);
                   Clipboard.setData(ClipboardData(text: url)).then((_) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Link disalin ke clipboard'),
-                      ),
-                    );
+                    if (mounted) {
+                      CustomDialogs.showSuccessSnackBar(
+                        context,
+                        'Link disalin ke clipboard',
+                      );
+                    }
                   });
                 },
                 child: const Text('Salin Link'),
@@ -692,7 +693,6 @@ class _PermissionDetailScreenState extends State<PermissionDetailScreen> {
 
   void _showDeleteConfirmation(Permission permission) {
     final primaryColor = Theme.of(context).primaryColor;
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
     showDialog(
@@ -719,9 +719,8 @@ class _PermissionDetailScreenState extends State<PermissionDetailScreen> {
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () async {
-                  Navigator.pop(context); // Close confirmation dialog
+                  Navigator.pop(context);
 
-                  // Show loading indicator
                   showDialog(
                     context: context,
                     barrierDismissible: false,
@@ -735,36 +734,30 @@ class _PermissionDetailScreenState extends State<PermissionDetailScreen> {
                       permission.id,
                     );
 
-                    // Always pop the loading dialog, whether success or failure
-                    navigator.pop(context);
+                    navigator.pop();
 
-                    if (result) {
-                      scaffoldMessenger.showSnackBar(
-                        SnackBar(
-                          content: Text(_permissionProvider.successMessage),
-                          backgroundColor: primaryColor,
-                        ),
-                      );
-
-                      // Navigate back to the permissions list screen
-                      navigator.pop(true);
-                    } else {
-                      scaffoldMessenger.showSnackBar(
-                        SnackBar(
-                          content: Text(_permissionProvider.errorMessage),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                    if (mounted) {
+                      if (result) {
+                        CustomDialogs.showSuccessSnackBar(
+                          context,
+                          'Izin berhasil dibatalkan',
+                        );
+                        navigator.pop(true);
+                      } else {
+                        CustomDialogs.showErrorSnackBar(
+                          context,
+                          'Gagal membatalkan izin',
+                        );
+                      }
                     }
                   } catch (e) {
-                    // Handle any unexpected errors
-                    navigator.pop(context); // Ensure loading dialog is closed
-                    scaffoldMessenger.showSnackBar(
-                      SnackBar(
-                        content: Text('Terjadi kesalahan: ${e.toString()}'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    navigator.pop();
+                    if (mounted) {
+                      CustomDialogs.showErrorSnackBar(
+                        context,
+                        'Terjadi kesalahan: ${e.toString()}',
+                      );
+                    }
                   }
                 },
                 child: const Text('Ya'),

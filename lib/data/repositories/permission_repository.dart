@@ -11,7 +11,6 @@ class PermissionRepository {
   final http.Client _client = http.Client();
   final SecureStorage _storage = SecureStorage();
 
-  // Mendapatkan daftar izin pengguna saat ini
   Future<ApiResponse<List<Permission>>> getMyPermissions({
     String? status,
   }) async {
@@ -25,7 +24,6 @@ class PermissionRepository {
         );
       }
 
-      // Membangun query parameter jika ada status yang difilter
       var uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.myPermissions}');
       if (status != null && status.isNotEmpty) {
         uri = uri.replace(queryParameters: {'status': status});
@@ -42,8 +40,7 @@ class PermissionRepository {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        final List<dynamic> permissionsJson =
-            data['data']['data']; // Nested 'data' karena paginasi
+        final List<dynamic> permissionsJson = data['data']['data'];
         final List<Permission> permissions =
             permissionsJson.map((json) => Permission.fromJson(json)).toList();
 
@@ -63,7 +60,6 @@ class PermissionRepository {
     }
   }
 
-  // Mendapatkan detail izin berdasarkan ID
   Future<ApiResponse<Permission>> getPermission(int id) async {
     try {
       final token = await _storage.read(ApiConfig.accessTokenKey);
@@ -103,8 +99,6 @@ class PermissionRepository {
     }
   }
 
-  // Membuat pengajuan izin baru
-  // Membuat pengajuan izin baru
   Future<ApiResponse<Permission>> createPermission({
     required int activityId,
     required String reason,
@@ -120,30 +114,20 @@ class PermissionRepository {
         );
       }
 
-      // Menggunakan multipart request untuk upload file
       var request = http.MultipartRequest(
         'POST',
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.permissions}'),
       );
 
-      // Menambahkan header
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
       });
 
-      // Menambahkan data form
       request.fields['activity_id'] = activityId.toString();
       request.fields['reason'] = reason;
 
-      // Debug information
-      print(
-        'Sending permission request with activity_id: ${activityId.toString()} (${activityId.runtimeType})',
-      );
-
-      // Menambahkan attachment jika ada
       if (attachment != null) {
-        // Mendapatkan content type berdasarkan ekstensi file
         final String extension = attachment.path.split('.').last.toLowerCase();
         String contentType = 'application/octet-stream';
 
@@ -183,12 +167,10 @@ class PermissionRepository {
         );
       }
     } catch (e) {
-      print('Error: $e'); // Tambahkan print untuk melihat pesan error
       return ApiResponse(success: false, message: 'Error: $e');
     }
   }
 
-  // Memperbarui pengajuan izin
   Future<ApiResponse<Permission>> updatePermission({
     required int id,
     int? activityId,
@@ -205,22 +187,18 @@ class PermissionRepository {
         );
       }
 
-      // Menggunakan multipart request untuk update file
       var request = http.MultipartRequest(
         'POST',
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.permissions}/$id'),
       );
 
-      // Menambahkan header
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
       });
 
-      // Menambahkan method override untuk PUT
       request.fields['_method'] = 'PUT';
 
-      // Menambahkan data form jika ada
       if (activityId != null) {
         request.fields['activity_id'] = activityId.toString();
       }
@@ -229,9 +207,7 @@ class PermissionRepository {
         request.fields['reason'] = reason;
       }
 
-      // Menambahkan attachment jika ada
       if (attachment != null) {
-        // Mendapatkan content type berdasarkan ekstensi file
         final String extension = attachment.path.split('.').last.toLowerCase();
         String contentType = 'application/octet-stream';
 
@@ -300,7 +276,6 @@ class PermissionRepository {
           message: data['message'] ?? 'Pengajuan izin berhasil dibatalkan',
         );
       } else {
-        // Better error handling for different status codes
         final data = jsonDecode(response.body);
         return ApiResponse(
           success: false,
