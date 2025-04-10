@@ -21,6 +21,14 @@ class ApiConfig {
   static const String getPotentialDelegates =
       'duty-schedules/potential-delegates';
 
+  static const String notifications = 'notifications';
+  static const String deleteNotification = 'notifications/{id}';
+  static const String deleteAllNotifications = 'notifications';
+  static const String notificationsUnreadCount = 'notifications/unread-count';
+  static const String markNotificationAsRead = 'notifications/{id}/read';
+  static const String markAllNotificationsAsRead =
+      'notifications/mark-all-read';
+
   static const int statusOk = 200;
   static const int statusCreated = 201;
   static const int statusBadRequest = 400;

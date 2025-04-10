@@ -4,6 +4,7 @@ import 'package:telemetri/ui/screens/auth/login_provider.dart';
 import 'package:telemetri/ui/screens/profile/profile_provider.dart';
 import 'package:telemetri/ui/screens/permission/permission_provider.dart';
 import 'package:telemetri/ui/screens/delegation/delegation_provider.dart';
+import 'package:telemetri/ui/screens/notification/notification_provider.dart';
 import 'package:telemetri/ui/navigations/app_routes.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:telemetri/ui/theme/app_theme.dart';
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => PermissionProvider()),
         ChangeNotifierProvider(create: (_) => DelegationProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
 
       child: Consumer<LoginProvider>(
