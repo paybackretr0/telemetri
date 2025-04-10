@@ -145,7 +145,11 @@ class AboutScreen extends StatelessWidget {
             spacing: 16,
             runSpacing: 16,
             children: [
-              _TeamMemberCard(name: 'Khalied Nauly Maturino', role: 'All Role'),
+              _TeamMemberCard(
+                name: 'Khalied Nauly Maturino',
+                role: 'All Role',
+                photoUrl: 'assets/images/h.JPG',
+              ),
             ],
           ),
         ],
@@ -389,7 +393,12 @@ class _TeamMemberCard extends StatelessWidget {
           CircleAvatar(
             radius: 30,
             backgroundColor: Colors.grey[200],
-            backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
+            backgroundImage:
+                photoUrl != null
+                    ? photoUrl!.startsWith('http')
+                        ? NetworkImage(photoUrl!)
+                        : AssetImage(photoUrl!) as ImageProvider
+                    : null,
             child:
                 photoUrl == null
                     ? Text(
