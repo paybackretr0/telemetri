@@ -213,15 +213,21 @@ class _EditPermissionScreenState extends State<EditPermissionScreen> {
                     hint: 'Pilih Kegiatan',
                     value: _selectedActivityId,
                     items:
-                        activities.map((activity) {
-                          return DropdownMenuItem<int>(
-                            value: activity.id,
-                            child: Text(
-                              '${activity.title} (${DateFormatter.formatDateTimeIndonesia(activity.startTime)})',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
+                        activities
+                            .where(
+                              (activity) =>
+                                  activity.startTime.isAfter(DateTime.now()),
+                            )
+                            .map((activity) {
+                              return DropdownMenuItem<int>(
+                                value: activity.id,
+                                child: Text(
+                                  '${activity.title} (${DateFormatter.formatDateTimeIndonesia(activity.startTime)})',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            })
+                            .toList(),
                     onChanged: (value) {
                       setState(() {
                         _selectedActivityId = value;

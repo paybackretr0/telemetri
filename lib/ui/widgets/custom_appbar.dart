@@ -9,14 +9,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double titleLeftPadding;
 
   const CustomAppBar({
-    Key? key,
+    super.key,
     required this.title,
     this.actions,
     this.showBackButton = false,
     this.showNotification = true,
     this.onBackPressed,
     this.titleLeftPadding = 10.0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -29,6 +29,9 @@ class ApiConfig {
   static const String markAllNotificationsAsRead =
       'notifications/mark-all-read';
 
+  static const String profile = 'profile/my';
+  static const String updateProfile = 'profile/update';
+
   static const int statusOk = 200;
   static const int statusCreated = 201;
   static const int statusBadRequest = 400;

@@ -20,11 +20,7 @@ class AuthRepository {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({
-          'id_token': idToken,
-          'access_token':
-              accessToken, // Tambahkan access_token untuk akses Calendar
-        }),
+        body: jsonEncode({'id_token': idToken, 'access_token': accessToken}),
       );
 
       final data = jsonDecode(response.body);
@@ -63,7 +59,6 @@ class AuthRepository {
     try {
       final token = await _storage.read(ApiConfig.accessTokenKey);
       if (token != null) {
-        // Call the logout API endpoint
         final response = await _client.post(
           Uri.parse('${ApiConfig.baseUrl}${ApiConfig.logout}'),
           headers: {
@@ -71,18 +66,12 @@ class AuthRepository {
             'Accept': 'application/json',
           },
         );
-
-        // Log the response for debugging
-        print('Logout API response: ${response.statusCode} - ${response.body}');
       }
 
-      // Clear local storage regardless of API response
       await _storage.deleteAll();
 
       return ApiResponse(success: true, message: 'Logout successful');
     } catch (e) {
-      print('Logout error: $e');
-      // Still clear storage even if API call fails
       await _storage.deleteAll();
       return ApiResponse(success: false, message: 'Logout failed: $e');
     }

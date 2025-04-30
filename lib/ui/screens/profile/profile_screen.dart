@@ -7,164 +7,296 @@ import 'package:telemetri/ui/navigations/app_routes.dart';
 import 'package:telemetri/ui/screens/permission/permission_screen.dart';
 import 'package:telemetri/ui/screens/faq/faq_screen.dart';
 import 'package:telemetri/ui/screens/about/about_screen.dart';
+import 'package:telemetri/utils/date_formatter.dart';
+import '../../../data/environment/env_config.dart';
+import '../../widgets/custom_form_fields.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ProfileProvider>(context, listen: false).getProfile();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildProfileHeader(context),
+      body: Consumer<ProfileProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            const SizedBox(height: 24),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildActionButton(
-                      context,
-                      'Pengajuan Izin',
-                      Icons.assignment_late_rounded,
-                      Colors.orange,
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const PermissionScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildActionButton(
-                      context,
-                      'Tukar Piket',
-                      Icons.swap_horiz_rounded,
-                      Colors.green,
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const DelegationScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildSectionTitle(context, 'Informasi Pengguna'),
-            ),
-            const SizedBox(height: 12),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: CustomCard(
-                child: Column(
-                  children: [
-                    _buildInfoItem(context, 'Email', 'Email A', Icons.email),
-                    Divider(color: Colors.grey.shade200, thickness: 1),
-                    _buildInfoItem(
-                      context,
-                      'No. Telepon',
-                      '+62 812-3456-7890',
-                      Icons.phone,
-                    ),
-                    Divider(color: Colors.grey.shade200, thickness: 1),
-                    _buildInfoItem(
-                      context,
-                      'Alamat',
-                      'Jl. Contoh No. 123, Kota',
-                      Icons.location_on,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildSectionTitle(context, 'Jadwal Piket'),
-            ),
-            const SizedBox(height: 12),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: CustomCard(
-                child: Column(
-                  children: [
-                    _buildScheduleItem(context, 'Senin', '08.00-10.00'),
-                    Divider(color: Colors.grey.shade200, thickness: 1),
-                    _buildScheduleItem(context, 'Rabu', '13.00-15.00'),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildSectionTitle(context, 'Informasi'),
-            ),
-            const SizedBox(height: 12),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+          if (provider.error != null) {
+            return Center(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildInfoCard(context, 'FAQ', Icons.help_outline, () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const FaqScreen(),
-                      ),
-                    );
-                  }),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    context,
-                    'Tentang Aplikasi',
-                    Icons.info_outline,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AboutScreen(),
-                        ),
-                      );
-                    },
+                  Text(
+                    'Error: ${provider.error}',
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => provider.getProfile(),
+                    child: const Text('Coba Lagi'),
                   ),
                 ],
               ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              await provider.getProfile();
+            },
+            color: Theme.of(context).primaryColor,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildProfileHeader(context, provider),
+
+                  const SizedBox(height: 24),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildActionButton(
+                            context,
+                            'Pengajuan Izin',
+                            Icons.assignment_late_rounded,
+                            Colors.orange,
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => const PermissionScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildActionButton(
+                            context,
+                            'Tukar Piket',
+                            Icons.swap_horiz_rounded,
+                            Colors.green,
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => const DelegationScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildSectionTitle(context, 'Informasi Pengurus'),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: CustomCard(
+                      child: Column(
+                        children: [
+                          _buildInfoItem(
+                            context,
+                            'Email',
+                            provider.user?.email ?? '-',
+                            Icons.email,
+                          ),
+                          Divider(color: Colors.grey.shade200, thickness: 1),
+                          _buildInfoItem(
+                            context,
+                            'No. Telepon',
+                            provider.user?.phoneNumber ?? '-',
+                            Icons.phone,
+                          ),
+                          Divider(color: Colors.grey.shade200, thickness: 1),
+                          _buildInfoItem(
+                            context,
+                            'NIM',
+                            provider.user?.nim ?? '-',
+                            Icons.badge,
+                          ),
+                          Divider(color: Colors.grey.shade200, thickness: 1),
+                          _buildInfoItem(
+                            context,
+                            'Jurusan',
+                            provider.user?.jurusan ?? '-',
+                            Icons.school,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildSectionTitle(context, 'Informasi Organisasi'),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: CustomCard(
+                      child: Column(
+                        children: [
+                          _buildInfoItem(
+                            context,
+                            'Jabatan',
+                            provider.user?.jabatan ?? '-',
+                            Icons.work,
+                          ),
+                          Divider(color: Colors.grey.shade200, thickness: 1),
+                          _buildInfoItem(
+                            context,
+                            'Divisi',
+                            provider.user?.divisi ?? '-',
+                            Icons.group,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildSectionTitle(context, 'Jadwal Piket'),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: CustomCard(
+                      child: Column(
+                        children:
+                            provider.user?.dutySchedules != null &&
+                                    provider.user!.dutySchedules!.isNotEmpty
+                                ? provider.user!.dutySchedules!.map((schedule) {
+                                  final timeRange =
+                                      DateFormatter.formatTimeRange(
+                                        schedule.startTime,
+                                        schedule.endTime,
+                                      );
+
+                                  return Column(
+                                    children: [
+                                      _buildScheduleItem(
+                                        context,
+                                        schedule.dayOfWeek,
+                                        timeRange,
+                                        schedule.location,
+                                      ),
+                                      if (schedule !=
+                                          provider.user!.dutySchedules!.last)
+                                        Divider(
+                                          color: Colors.grey.shade200,
+                                          thickness: 1,
+                                        ),
+                                    ],
+                                  );
+                                }).toList()
+                                : [
+                                  Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Text(
+                                        'Tidak ada jadwal piket',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildSectionTitle(context, 'Informasi'),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        _buildInfoCard(context, 'FAQ', Icons.help_outline, () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const FaqScreen(),
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 12),
+                        _buildInfoCard(
+                          context,
+                          'Tentang Aplikasi',
+                          Icons.info_outline,
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AboutScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildLogoutButton(context),
+                  ),
+
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
-
-            const SizedBox(height: 32),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildLogoutButton(context),
-            ),
-
-            const SizedBox(height: 32),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -235,13 +367,19 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildScheduleItem(BuildContext context, String day, String time) {
+  Widget _buildScheduleItem(
+    BuildContext context,
+    String day,
+    String time, [
+    String? location,
+  ]) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 width: 40,
@@ -257,30 +395,58 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                day,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  day,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  time,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).primaryColor,
+                  ),
                 ),
               ),
             ],
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              time,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).primaryColor,
+          if (location != null && location.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, left: 52),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      location,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
         ],
       ),
     );
@@ -333,7 +499,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context) {
+  Widget _buildProfileHeader(BuildContext context, ProfileProvider provider) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
@@ -347,8 +513,8 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
         ),
         boxShadow: [
           BoxShadow(
@@ -368,8 +534,7 @@ class ProfileScreen extends StatelessWidget {
                 height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
-                  color: Colors.white,
+                  border: Border.all(color: Colors.white, width: 3),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.2),
@@ -378,26 +543,28 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Icon(Icons.person, size: 80, color: Colors.blue),
-                ),
+                child: ClipOval(child: _buildProfileImage(provider)),
               ),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    RouteNames.editProfile,
+                  ).then((_) => setState(() {}));
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                   child: Icon(
                     Icons.edit,
                     size: 18,
@@ -407,59 +574,71 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
-          const Text(
-            '[Nama Pengurus]',
-            style: TextStyle(
+          Text(
+            provider.user?.name ?? 'Nama Pengguna',
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),
-
           const SizedBox(height: 4),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Text(
-              '[SN. A13-013]',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
+          Text(
+            provider.user?.nomorSeri ?? 'SN. A13',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white.withOpacity(0.9),
             ),
           ),
-
-          const SizedBox(height: 8),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.business,
-                size: 16,
-                color: Colors.white.withOpacity(0.9),
-              ),
-              const SizedBox(width: 4),
-              const Text(
-                '[Divisi Pengurus]',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-            ],
+          const SizedBox(height: 4),
+          Text(
+            provider.user?.subDivisi ?? 'Mobile Programming',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProfileImage(ProfileProvider provider) {
+    if (provider.user?.profilePicture == null ||
+        provider.user!.profilePicture!.isEmpty) {
+      return const Icon(Icons.person, size: 80, color: Colors.white);
+    }
+
+    final String profilePicture = provider.user!.profilePicture!;
+
+    if (profilePicture.startsWith('http')) {
+      return Image.network(
+        profilePicture,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          print('Error loading network image: $error');
+          return const Icon(Icons.person, size: 80, color: Colors.white);
+        },
+      );
+    }
+    final String storageUrl = EnvConfig.storageUrl;
+
+    final String fullUrl =
+        profilePicture.startsWith('/')
+            ? '$storageUrl${profilePicture.substring(1)}'
+            : '$storageUrl$profilePicture';
+
+    print('Constructed URL: $fullUrl');
+
+    return Image.network(
+      fullUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        print('Error loading network image: $error');
+        return const Icon(Icons.person, size: 80, color: Colors.white);
+      },
     );
   }
 
@@ -525,108 +704,61 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildLogoutButton(BuildContext context) {
     final profileProvider = Provider.of<ProfileProvider>(context);
 
-    return CustomCard(
-      color: Colors.red.shade50,
-      onTap:
-          profileProvider.isLoading
-              ? null
-              : () {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder:
-                      (dialogContext) => AlertDialog(
-                        title: const Text('Konfirmasi'),
-                        content: const Text('Apakah Anda yakin ingin keluar?'),
-                        actions: [
-                          TextButton(
-                            onPressed:
-                                profileProvider.isLoading
-                                    ? null
-                                    : () => Navigator.pop(dialogContext),
-                            child: const Text('Batal'),
-                          ),
-                          TextButton(
-                            onPressed:
-                                profileProvider.isLoading
-                                    ? null
-                                    : () async {
-                                      Navigator.pop(dialogContext);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: CustomSubmitButton(
+        text: 'Keluar',
+        isLoading: profileProvider.isLoading,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        onPressed: () {
+          CustomDialogs.showConfirmationDialog(
+            context: context,
+            title: 'Konfirmasi',
+            message: 'Apakah Anda yakin ingin keluar?',
+            confirmText: 'Keluar',
+            cancelText: 'Batal',
+            confirmColor: Colors.red,
+            confirmIcon: Icons.logout,
+            cancelIcon: Icons.close,
+          ).then((confirmed) async {
+            if (confirmed == true) {
+              final success = await profileProvider.logout();
 
-                                      showDialog(
-                                        context: context,
-                                        barrierDismissible: false,
-                                        builder:
-                                            (loadingContext) => const Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            ),
-                                      );
-
-                                      final success =
-                                          await profileProvider.logout();
-
-                                      if (context.mounted) {
-                                        Navigator.pop(context);
-
-                                        if (success) {
-                                          Navigator.of(
-                                            context,
-                                          ).pushNamedAndRemoveUntil(
-                                            RouteNames.login,
-                                            (route) => false,
-                                          );
-                                        } else {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                profileProvider.error ??
-                                                    'Logout failed',
-                                              ),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                            child: const Text(
-                              'Keluar',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        ],
-                      ),
+              if (context.mounted && success) {
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil(RouteNames.login, (route) => false);
+              } else if (context.mounted && !success) {
+                CustomDialogs.showErrorSnackBar(
+                  context,
+                  profileProvider.error ?? 'Gagal keluar dari aplikasi',
                 );
-              },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            profileProvider.isLoading
-                ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.red.shade700,
-                  ),
-                )
-                : Icon(Icons.logout, color: Colors.red.shade700),
-            const SizedBox(width: 12),
-            Text(
-              profileProvider.isLoading ? 'Logging out...' : 'Keluar',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.red.shade700,
-              ),
-            ),
-          ],
-        ),
+              }
+            }
+          });
+        },
       ),
     );
+  }
+}
+
+String getProfilePictureUrl(String? profilePicture) {
+  if (profilePicture == null || profilePicture.isEmpty) {
+    return '';
+  }
+
+  if (profilePicture.startsWith('http')) {
+    return profilePicture;
+  }
+
+  try {
+    String baseUrl = EnvConfig.storageUrl;
+    if (!baseUrl.endsWith('/')) {
+      baseUrl += '/';
+    }
+    return '$baseUrl$profilePicture';
+  } catch (e) {
+    return '';
   }
 }
