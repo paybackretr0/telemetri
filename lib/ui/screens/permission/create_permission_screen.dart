@@ -239,21 +239,27 @@ class _CreatePermissionScreenState extends State<CreatePermissionScreen> {
                     hint: 'Pilih Kegiatan',
                     value: _selectedActivityId,
                     items:
-                        activities.map((activity) {
-                          int activityId;
-                          try {
-                            activityId = activity.id;
-                          } catch (e) {
-                            activityId = 0;
-                          }
-                          return DropdownMenuItem<int>(
-                            value: activityId,
-                            child: Text(
-                              '${activity.title} (${_formatDateTime(activity.startTime)})',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
+                        activities
+                            .where(
+                              (activity) =>
+                                  activity.startTime.isAfter(DateTime.now()),
+                            )
+                            .map((activity) {
+                              int activityId;
+                              try {
+                                activityId = activity.id;
+                              } catch (e) {
+                                activityId = 0;
+                              }
+                              return DropdownMenuItem<int>(
+                                value: activityId,
+                                child: Text(
+                                  '${activity.title} (${_formatDateTime(activity.startTime)})',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            })
+                            .toList(),
                     onChanged: (value) {
                       setState(() {
                         _selectedActivityId = value;

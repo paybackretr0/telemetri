@@ -241,12 +241,18 @@ class CustomSubmitButton extends StatelessWidget {
   final String text;
   final bool isLoading;
   final Function() onPressed;
+  final Color? backgroundColor;
+  final Color? textColor;
+  final IconData? icon;
 
   const CustomSubmitButton({
     super.key,
     required this.text,
     required this.isLoading,
     required this.onPressed,
+    this.backgroundColor,
+    this.textColor,
+    this.icon,
   });
 
   @override
@@ -256,8 +262,8 @@ class CustomSubmitButton extends StatelessWidget {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          backgroundColor: Theme.of(context).primaryColor,
-          foregroundColor: Colors.white,
+          backgroundColor: backgroundColor ?? Theme.of(context).primaryColor,
+          foregroundColor: textColor ?? Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         onPressed: isLoading ? null : onPressed,
@@ -270,6 +276,15 @@ class CustomSubmitButton extends StatelessWidget {
                     strokeWidth: 2,
                     color: Colors.white,
                   ),
+                )
+                : icon != null
+                ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, size: 18),
+                    const SizedBox(width: 8),
+                    Text(text),
+                  ],
                 )
                 : Text(text),
       ),

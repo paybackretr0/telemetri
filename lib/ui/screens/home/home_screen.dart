@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:telemetri/ui/widgets/custom_card.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:telemetri/ui/navigations/app_routes.dart';
+import 'package:telemetri/data/models/activity_model.dart';
+import 'package:telemetri/data/environment/env_config.dart';
+import 'home_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -14,14 +18,46 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late HomeProvider _homeProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _homeProvider = Provider.of<HomeProvider>(context, listen: false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _homeProvider.refreshHomeData();
+    });
+  }
+
   Widget _buildAttendanceGraph() {
     return CustomCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Statistik Kehadiran',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Statistik Kehadiran',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Rata-rata: 87%',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.green,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -156,9 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTodayActivityCard(Map<String, dynamic> activity) {
-    final activityDate = DateTime.parse(activity['date']);
-
+  Widget _buildTodayActivityCard(Activity activity) {
     return CustomCard(
       margin: const EdgeInsets.only(bottom: 16.0),
       child: SizedBox(
@@ -167,17 +201,17 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              activity['title'],
+              activity.title,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
-              'Lokasi: ${activity['location']}',
+              'Lokasi: ${activity.location}',
               style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 4),
             Text(
-              'Waktu: ${DateFormat('HH:mm').format(activityDate)}',
+              'Waktu: ${DateFormat('HH:mm').format(activity.startTime)}',
               style: const TextStyle(fontSize: 14),
             ),
           ],
@@ -255,194 +289,231 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildProfileImage(dynamic user) {
+    if (user?.profilePicture == null || user.profilePicture.isEmpty) {
+      return CircleAvatar(
+        radius: 30,
+        backgroundImage: AssetImage('assets/images/default_profile.png'),
+      );
+    }
+
+    final String profilePicture = user.profilePicture;
+
+    if (profilePicture.startsWith('http')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: Image.network(
+          profilePicture,
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return CircleAvatar(
+              radius: 30,
+              backgroundImage: AssetImage('assets/images/default_profile.png'),
+            );
+          },
+        ),
+      );
+    }
+
+    final String storageUrl = EnvConfig.storageUrl;
+
+    final String fullUrl =
+        profilePicture.startsWith('/')
+            ? '$storageUrl${profilePicture.substring(1)}'
+            : '$storageUrl$profilePicture';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: Image.network(
+        fullUrl,
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return CircleAvatar(
+            radius: 30,
+            backgroundImage: AssetImage('assets/images/default_profile.png'),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> todayActivities = [
-      {
-        'id': '1',
-        'title': 'Rapat Anggota',
-        'date': '${DateTime.now().toString().split(' ')[0]} 15:00:00',
-        'location': 'Aula Utama',
-      },
-      {
-        'id': '2',
-        'title': 'Workshop Flutter',
-        'date': '${DateTime.now().toString().split(' ')[0]} 09:00:00',
-        'location': 'Ruang Multimedia',
-      },
-    ];
-
-    final List<Map<String, dynamic>> attendanceStatus = [
-      {
-        'id': '1',
-        'title': 'Piket Harian',
-        'date': '${DateTime.now().toString().split(' ')[0]} 08:00:00',
-        'location': 'Ruang Sekretariat',
-        'status': 'Hadir',
-      },
-      {
-        'id': '2',
-        'title': 'Rapat Koordinasi',
-        'date':
-            '${DateTime.now().subtract(const Duration(days: 1)).toString().split(' ')[0]} 13:00:00',
-        'location': 'Ruang Rapat',
-        'status': 'Izin',
-      },
-      {
-        'id': '3',
-        'title': 'Pelatihan Desain',
-        'date':
-            '${DateTime.now().subtract(const Duration(days: 2)).toString().split(' ')[0]} 10:00:00',
-        'location': 'Lab Komputer',
-        'status': 'Tidak Hadir',
-      },
-    ];
-
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: () async {
-          // No refresh logic needed for dummy data
+          await _homeProvider.refreshHomeData();
         },
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(16.0),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  CustomCard(
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundImage: AssetImage(
-                            'assets/images/default_profile.png',
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Halo, [Nama User]',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
+        child: Consumer<HomeProvider>(
+          builder: (context, provider, _) {
+            return CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.all(16.0),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      CustomCard(
+                        child: Row(
+                          children: [
+                            _buildProfileImage(provider.currentUser),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Halo, ${provider.currentUser?.name ?? "[Nama User]"}',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildAttendanceGraph(),
-
-                  const SizedBox(height: 12),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Kegiatan Hari Ini',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                            ),
+                          ],
                         ),
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            RouteNames.main,
-                            arguments: {'initialIndex': 1},
-                          );
-                        },
-                        child: Text(
-                          'Lihat Semua',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                      _buildAttendanceGraph(),
 
-                  todayActivities.isEmpty
-                      ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24.0),
-                          child: Text(
-                            'Tidak ada kegiatan hari ini',
+                      const SizedBox(height: 12),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Kegiatan Hari Ini',
                             style: TextStyle(
-                              fontSize: 14,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.grey,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ),
-                      )
-                      : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushReplacementNamed(
+                                context,
+                                RouteNames.main,
+                                arguments: {'initialIndex': 1},
+                              );
+                            },
+                            child: Text(
+                              'Lihat Semua',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      provider.isLoading
+                          ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 24.0,
+                              ),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                          : provider.todayActivities.isEmpty
+                          ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24.0),
+                              child: Text(
+                                'Tidak ada kegiatan hari ini',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+                          )
+                          : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children:
+                                provider.todayActivities
+                                    .map(
+                                      (activity) =>
+                                          _buildTodayActivityCard(activity),
+                                    )
+                                    .toList(),
+                          ),
+
+                      const SizedBox(height: 24),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Riwayat Kehadiran',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushReplacementNamed(
+                                context,
+                                RouteNames.main,
+                                arguments: {'initialIndex': 3},
+                              );
+                            },
+                            child: Text(
+                              'Lihat Semua',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      Column(
                         children:
-                            todayActivities
+                            attendanceStatus
                                 .map(
-                                  (activity) =>
-                                      _buildTodayActivityCard(activity),
+                                  (status) =>
+                                      _buildAttendanceStatusCard(status),
                                 )
                                 .toList(),
                       ),
 
-                  const SizedBox(height: 24),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Status Presensi Terbaru',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            RouteNames.main,
-                            arguments: {'initialIndex': 3},
-                          );
-                        },
-                        child: Text(
-                          'Lihat Semua',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                        ),
-                      ),
-                    ],
+                      const SizedBox(height: 24),
+                    ]),
                   ),
-                  const SizedBox(height: 12),
-
-                  Column(
-                    children:
-                        attendanceStatus
-                            .map((status) => _buildAttendanceStatusCard(status))
-                            .toList(),
-                  ),
-
-                  const SizedBox(height: 24),
-                ]),
-              ),
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 }
+
+final List<Map<String, dynamic>> attendanceStatus = [
+  {
+    'date': DateTime.now().toString(),
+    'status': 'Hadir',
+    'title': 'Rapat Koordinasi',
+    'location': 'Ruang Meeting Utama',
+  },
+  {
+    'date': DateTime.now().subtract(const Duration(days: 1)).toString(),
+    'status': 'Izin',
+    'title': 'Workshop Flutter',
+    'location': 'Aula Gedung B',
+  },
+];

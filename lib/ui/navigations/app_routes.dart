@@ -10,6 +10,7 @@ import 'package:telemetri/ui/screens/history/history_screen.dart';
 import 'package:telemetri/ui/screens/profile/profile_screen.dart';
 import 'package:telemetri/ui/screens/notification/notification_screen.dart';
 import 'package:telemetri/ui/screens/about/about_screen.dart';
+import 'package:telemetri/ui/screens/profile/edit_profile_screen.dart';
 
 class RouteNames {
   static const main = '/main';
@@ -23,6 +24,7 @@ class RouteNames {
   static const notification = '/notification';
   static const faq = '/faq';
   static const about = '/about';
+  static const editProfile = '/edit-profile';
 }
 
 class AppRoutes {
@@ -55,6 +57,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const FaqScreen());
       case RouteNames.about:
         return MaterialPageRoute(builder: (_) => const AboutScreen());
+      case RouteNames.editProfile:
+        return MaterialPageRoute(builder: (_) => const EditProfileScreen());
       default:
         return MaterialPageRoute(
           builder:
