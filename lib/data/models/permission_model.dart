@@ -33,7 +33,6 @@ class Permission {
   });
 
   factory Permission.fromJson(Map<String, dynamic> json) {
-    // Fungsi helper untuk parsing integer dari berbagai format
     int parseId(dynamic value) {
       if (value == null) return 0;
       if (value is int) return value;
@@ -41,7 +40,6 @@ class Permission {
         try {
           return int.parse(value);
         } catch (e) {
-          print('Error parsing integer value: $value, error: $e');
           return 0;
         }
       }
@@ -70,10 +68,6 @@ class Permission {
             json['approver'] != null ? User.fromJson(json['approver']) : null,
       );
     } catch (e) {
-      print('Error parsing Permission from JSON: $e');
-      print('Problematic JSON: $json');
-
-      // Return a default Permission object in case of parsing error
       return Permission(
         id: 0,
         userId: 0,
@@ -101,7 +95,6 @@ class Permission {
     };
   }
 
-  // Helper untuk mendapatkan status dalam Bahasa Indonesia
   String get statusLabel {
     switch (status) {
       case 'pending':

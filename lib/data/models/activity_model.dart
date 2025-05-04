@@ -29,7 +29,6 @@ class Activity {
     required this.updatedAt,
   });
 
-  // Getter untuk kompatibilitas dengan dropdown (mereferensikan .name)
   String get name => title;
 
   factory Activity.fromJson(Map<String, dynamic> json) {
@@ -74,9 +73,6 @@ class Activity {
                 : DateTime.now(),
       );
     } catch (e) {
-      print('Error parsing Activity from JSON: $e');
-      print('Problematic JSON: $json');
-      // Return a default Activity object in case of parsing error
       return Activity(
         id: 0,
         title: 'Error parsing activity',
