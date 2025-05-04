@@ -10,7 +10,7 @@ class CustomCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const CustomCard({
-    Key? key,
+    super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16.0),
     this.margin = const EdgeInsets.only(bottom: 12.0),
@@ -18,7 +18,7 @@ class CustomCard extends StatelessWidget {
     this.borderRadius,
     this.color = Colors.white,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

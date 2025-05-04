@@ -8,4 +8,9 @@ class EnvConfig {
     'API_BASE_URL',
     defaultValue: 'URL_ADDRESS.example.com',
   );
+
+  static const String storageUrl = String.fromEnvironment(
+    'STORAGE_URL',
+    defaultValue: 'URL_ADDRESS_STORAGE.example.com',
+  );
 }

@@ -37,7 +37,6 @@ class DutyRepository {
         List<Duty> duties = [];
 
         if (jsonData != null && jsonData is Map<String, dynamic>) {
-          // Check if there's an error message from the backend
           if (jsonData.containsKey('message') &&
               jsonData.containsKey('exception')) {
             print('Backend error: ${jsonData['message']}');
@@ -62,9 +61,6 @@ class DutyRepository {
           data: duties,
         );
       } else {
-        print('Error message: ${response.body}');
-
-        // Try to parse error message from JSON if possible
         try {
           final errorData = jsonDecode(response.body);
           if (errorData is Map<String, dynamic> &&
@@ -88,12 +84,10 @@ class DutyRepository {
         );
       }
     } catch (e) {
-      print('Error in getDelegableDutySchedules: $e');
       return ApiResponse(success: false, message: 'Error: $e');
     }
   }
 
-  // Get all users who can be potential delegates
   Future<ApiResponse<List<User>>> getPotentialDelegates() async {
     try {
       final token = await _storage.read(ApiConfig.accessTokenKey);
@@ -144,12 +138,10 @@ class DutyRepository {
         );
       }
     } catch (e) {
-      print('Error in getPotentialDelegates: $e');
       return ApiResponse(success: false, message: 'Error: $e');
     }
   }
 
-  // Get the authenticated user's duty schedules
   Future<ApiResponse<List<Duty>>> getMyDutySchedules() async {
     try {
       final token = await _storage.read(ApiConfig.accessTokenKey);
@@ -186,7 +178,6 @@ class DutyRepository {
             data: duties,
           );
         } else {
-          print('Error message: ${jsonData['message']}');
           return ApiResponse(
             success: false,
             message: jsonData['message'] ?? 'Gagal mendapatkan jadwal piket',
@@ -199,7 +190,6 @@ class DutyRepository {
         );
       }
     } catch (e) {
-      print('Error in getMyDutySchedules: $e');
       return ApiResponse(success: false, message: 'Error: $e');
     }
   }
