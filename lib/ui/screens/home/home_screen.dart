@@ -293,7 +293,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (user?.profilePicture == null || user.profilePicture.isEmpty) {
       return CircleAvatar(
         radius: 30,
-        backgroundImage: AssetImage('assets/images/default_profile.png'),
+        backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+        child: Icon(
+          Icons.person,
+          size: 40,
+          color: Theme.of(context).primaryColor,
+        ),
       );
     }
 
@@ -310,7 +315,12 @@ class _HomeScreenState extends State<HomeScreen> {
           errorBuilder: (context, error, stackTrace) {
             return CircleAvatar(
               radius: 30,
-              backgroundImage: AssetImage('assets/images/default_profile.png'),
+              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+              child: Icon(
+                Icons.person,
+                size: 40,
+                color: Theme.of(context).primaryColor,
+              ),
             );
           },
         ),
@@ -334,7 +344,12 @@ class _HomeScreenState extends State<HomeScreen> {
         errorBuilder: (context, error, stackTrace) {
           return CircleAvatar(
             radius: 30,
-            backgroundImage: AssetImage('assets/images/default_profile.png'),
+            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+            child: Icon(
+              Icons.person,
+              size: 40,
+              color: Theme.of(context).primaryColor,
+            ),
           );
         },
       ),

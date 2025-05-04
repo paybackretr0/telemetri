@@ -50,4 +50,20 @@ class DateFormatter {
       return 'Tanggal tidak valid';
     }
   }
+
+  static String formatDate(DateTime date, String format) {
+    try {
+      if (format == 'dd MMMM yyyy') {
+        return '${date.day} ${_namaBulan[date.month - 1]} ${date.year}';
+      } else if (format == 'dd/MM/yyyy') {
+        return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+      } else if (format == 'yyyy-MM-dd') {
+        return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      } else {
+        return '${date.day} ${_namaBulan[date.month - 1]} ${date.year}';
+      }
+    } catch (e) {
+      return 'Tanggal tidak valid';
+    }
+  }
 }

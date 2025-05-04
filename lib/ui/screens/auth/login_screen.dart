@@ -93,7 +93,7 @@ class LoginScreen extends StatelessWidget {
                     width: 24,
                   ),
                   label: const Text(
-                    "Sign in with Google",
+                    "Masuk dengan Akun Google",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -106,11 +106,6 @@ class LoginScreen extends StatelessWidget {
                     ),
                   ),
                   onPressed: () => _handleGoogleSignIn(context, auth),
-                  // onPressed:
-                  //     () => Navigator.pushReplacementNamed(
-                  //       context,
-                  //       RouteNames.main,
-                  //     ),
                 ),
               ),
 
@@ -140,25 +135,25 @@ class WaveClipper extends CustomClipper<Path> {
     var path = Path();
     path.lineTo(0, size.height - 50);
 
-    var firstControlPoint = Offset(size.width / 4, size.height);
-    var firstEndPoint = Offset(size.width / 2, size.height - 30);
+    var gelombangPertamaKiri = Offset(size.width / 4, size.height);
+    var gelombangPertamaTengah = Offset(size.width / 2, size.height - 30);
     path.quadraticBezierTo(
-      firstControlPoint.dx,
-      firstControlPoint.dy,
-      firstEndPoint.dx,
-      firstEndPoint.dy,
+      gelombangPertamaKiri.dx,
+      gelombangPertamaKiri.dy,
+      gelombangPertamaTengah.dx,
+      gelombangPertamaTengah.dy,
     );
 
-    var secondControlPoint = Offset(
+    var gelomobangKeduaTengahKanan = Offset(
       size.width - (size.width / 4),
       size.height - 80,
     );
-    var secondEndPoint = Offset(size.width, size.height - 40);
+    var gelombangKeduaTengahAkhir = Offset(size.width, size.height - 40);
     path.quadraticBezierTo(
-      secondControlPoint.dx,
-      secondControlPoint.dy,
-      secondEndPoint.dx,
-      secondEndPoint.dy,
+      gelomobangKeduaTengahKanan.dx,
+      gelomobangKeduaTengahKanan.dy,
+      gelombangKeduaTengahAkhir.dx,
+      gelombangKeduaTengahAkhir.dy,
     );
 
     path.lineTo(size.width, 0);

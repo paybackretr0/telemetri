@@ -160,7 +160,6 @@ class PermissionRepository {
           data: permission,
         );
       } else {
-        print('Error: ${response.body}');
         return ApiResponse(
           success: false,
           message: data['message'] ?? 'Gagal membuat pengajuan izin',

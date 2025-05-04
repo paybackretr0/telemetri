@@ -14,7 +14,6 @@ dependencies:
   provider: ^6.1.1
   flutter_screenutil: ^5.9.0
   go_router: ^14.0.0
-  cupertino_icons: ^1.0.2
   http: ^1.3.0
   flutter_secure_storage: ^9.2.4
   intl: ^0.18.1
@@ -39,11 +38,9 @@ flutter:
   # Assets configuration
   assets:
     - assets/images/
-    # Jika Anda memiliki folder lain, tambahkan di sini
     # - assets/icons/
     - assets/fonts/
 
-  # Uncomment bagian ini jika Anda ingin menambahkan font kustom
   fonts:
     - family: Raleway
       fonts:

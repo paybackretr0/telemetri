@@ -59,7 +59,7 @@ class AuthRepository {
     try {
       final token = await _storage.read(ApiConfig.accessTokenKey);
       if (token != null) {
-        final response = await _client.post(
+        await _client.post(
           Uri.parse('${ApiConfig.baseUrl}${ApiConfig.logout}'),
           headers: {
             'Authorization': 'Bearer $token',
