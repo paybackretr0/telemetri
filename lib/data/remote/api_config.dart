@@ -5,7 +5,7 @@ class ApiConfig {
 
   static const String googleLogin = 'auth/google-flutter';
   static const String logout = 'auth/logout';
-  static const String refresh = 'auth/refresh';
+  static const String refresh = 'refresh-google-token';
 
   static const String activities = 'activities';
 
@@ -28,6 +28,8 @@ class ApiConfig {
   static const String markNotificationAsRead = 'notifications/{id}/read';
   static const String markAllNotificationsAsRead =
       'notifications/mark-all-read';
+
+  static const String history = 'history/all';
 
   static const String profile = 'profile/my';
   static const String updateProfile = 'profile/update';
