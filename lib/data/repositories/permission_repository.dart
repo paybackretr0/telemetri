@@ -71,8 +71,10 @@ class PermissionRepository {
         );
       }
 
+      final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.permissions}/$id');
+
       final response = await _client.get(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.permissions}/$id'),
+        uri,
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -89,6 +91,7 @@ class PermissionRepository {
           data: permission,
         );
       } else {
+        print(data['message']);
         return ApiResponse(
           success: false,
           message: data['message'] ?? 'Gagal mendapatkan detail izin',

@@ -43,9 +43,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
+  Future<void> _refreshToken() async {
+    final success = await _provider.refreshToken();
+
+    if (success) {
+      await _loadEvents();
+    } else if (_provider.needsReauthentication) {
+      _showReauthenticationDialog();
+    }
+  }
+
   void _generateEventsMap() {
     _events = {};
-    
+
     for (var event in _provider.formattedEvents) {
       final parts = event['date'].split('/');
       if (parts.length != 3) continue;
@@ -56,7 +66,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final year = int.parse(parts[2]);
 
         final eventDate = DateTime(year, month, day);
-        
+
         if (_events[eventDate] != null) {
           _events[eventDate]!.add(event);
         } else {
@@ -66,7 +76,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         // Abaikan jika format tanggal tidak valid
       }
     }
-    
+
     setState(() {});
   }
 
@@ -112,7 +122,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         return AlertDialog(
           title: const Text('Autentikasi Diperlukan'),
           content: const Text(
-            'Sesi Anda telah berakhir. Silakan login kembali untuk mengakses kalender Anda.',
+            'Token kadaluarsa, silakan refresh dengan klik tombol di bawah ini.',
           ),
           actions: <Widget>[
             TextButton(
@@ -270,7 +280,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
-                            onPressed: _loadEvents,
+                            onPressed: _refreshToken,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Theme.of(context).primaryColor,
                               foregroundColor: Colors.white,

@@ -5,8 +5,10 @@ import 'package:telemetri/ui/widgets/custom_card.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:telemetri/ui/navigations/app_routes.dart';
 import 'package:telemetri/data/models/activity_model.dart';
+import 'package:telemetri/data/models/history_model.dart';
 import 'package:telemetri/data/environment/env_config.dart';
 import 'home_provider.dart';
+import 'package:telemetri/utils/date_formatter.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -31,6 +33,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAttendanceGraph() {
+    Map<int, List<History>> historyByMonth = {};
+    Map<int, double> attendancePercentage = {};
+    double totalPercentage = 0;
+    int monthCount = 0;
+
+    for (var history in _homeProvider.recentHistory) {
+      int month = history.date.month;
+      historyByMonth.putIfAbsent(month, () => []);
+      historyByMonth[month]!.add(history);
+    }
+
+    historyByMonth.forEach((month, histories) {
+      int totalDays = histories.length;
+      int presentDays = histories.where((h) => h.status == 'hadir').length;
+      double percentage = (presentDays / totalDays) * 100;
+      attendancePercentage[month] = percentage;
+      totalPercentage += percentage;
+      monthCount++;
+    });
+
+    double averagePercentage =
+        monthCount > 0 ? totalPercentage / monthCount : 0;
+
     return CustomCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'Rata-rata: 87%',
+                  'Rata-rata: ${averagePercentage.toStringAsFixed(1)}%',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -67,12 +92,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 alignment: BarChartAlignment.spaceBetween,
                 maxY: 100,
                 barGroups: List.generate(12, (index) {
-                  final data = [85, 90, 75, 95, 80, 88, 92, 78, 83, 89, 91, 87];
+                  double value = attendancePercentage[index + 1] ?? 0;
                   return BarChartGroupData(
                     x: index,
                     barRods: [
                       BarChartRodData(
-                        toY: data[index].toDouble(),
+                        toY: value,
                         gradient: const LinearGradient(
                           colors: [Color(0xFF214DD0), Color(0xFF4E8FF3)],
                           begin: Alignment.bottomCenter,
@@ -220,75 +245,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAttendanceStatusCard(Map<String, dynamic> status) {
-    final statusDate = DateTime.parse(status['date']);
-    final statusColor =
-        status['status'] == 'Hadir'
-            ? Colors.green
-            : status['status'] == 'Izin'
-            ? Colors.orange
-            : Colors.red;
-
-    return CustomCard(
-      margin: const EdgeInsets.only(bottom: 16.0),
-      child: SizedBox(
-        width: double.infinity,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    status['title'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    status['status'],
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(statusDate),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Lokasi: ${status['location']}',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Waktu: ${DateFormat('HH:mm').format(statusDate)}',
-              style: const TextStyle(fontSize: 14),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildProfileImage(dynamic user) {
     if (user?.profilePicture == null || user.profilePicture.isEmpty) {
       return CircleAvatar(
@@ -352,6 +308,116 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildHistoryCard(History item) {
+    Color statusColor = Colors.grey;
+    IconData statusIcon = Icons.help_outline;
+
+    switch (item.status) {
+      case 'hadir':
+        statusColor = Colors.green;
+        statusIcon = Icons.check_circle;
+        break;
+      case 'izin':
+        statusColor = Colors.orange;
+        statusIcon = Icons.assignment_late;
+        break;
+      default:
+        statusColor = Colors.red;
+        statusIcon = Icons.cancel;
+    }
+
+    return CustomCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, size: 14, color: statusColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      item.status,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+              const SizedBox(width: 6),
+              Text(
+                DateFormatter.formatDate(item.date, 'dd MMMM yyyy'),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.access_time, size: 14, color: Colors.grey.shade600),
+              const SizedBox(width: 6),
+              Text(
+                'Masuk: ${item.checkInTime != null ? DateFormatter.formatTime(DateTime.parse(item.checkInTime!)) : "-"}',
+                style: const TextStyle(fontSize: 14),
+              ),
+              if (item.checkOutTime != null) ...[
+                const SizedBox(width: 12),
+                Text(
+                  'Keluar: ${DateFormatter.formatTime(DateTime.parse(item.checkOutTime!))}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(Icons.category, size: 14, color: Colors.grey.shade600),
+              const SizedBox(width: 6),
+              Text(
+                item.activityType,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -495,15 +561,37 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      Column(
-                        children:
-                            attendanceStatus
-                                .map(
-                                  (status) =>
-                                      _buildAttendanceStatusCard(status),
-                                )
-                                .toList(),
-                      ),
+                      provider.isLoading && provider.recentHistory.isEmpty
+                          ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 24.0,
+                              ),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                          : provider.recentHistory.isEmpty
+                          ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24.0),
+                              child: Text(
+                                'Tidak ada riwayat kehadiran',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+                          )
+                          : Column(
+                            children:
+                                provider.recentHistory
+                                    .map(
+                                      (history) => _buildHistoryCard(history),
+                                    )
+                                    .toList(),
+                          ),
 
                       const SizedBox(height: 24),
                     ]),
@@ -517,18 +605,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-final List<Map<String, dynamic>> attendanceStatus = [
-  {
-    'date': DateTime.now().toString(),
-    'status': 'Hadir',
-    'title': 'Rapat Koordinasi',
-    'location': 'Ruang Meeting Utama',
-  },
-  {
-    'date': DateTime.now().subtract(const Duration(days: 1)).toString(),
-    'status': 'Izin',
-    'title': 'Workshop Flutter',
-    'location': 'Aula Gedung B',
-  },
-];

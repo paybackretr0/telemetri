@@ -77,6 +77,50 @@ class AuthRepository {
     }
   }
 
+  Future<ApiResponse<String>> refreshGoogleToken() async {
+    try {
+      final googleToken = await _storage.read(ApiConfig.googleTokenKey);
+      if (googleToken == null) {
+        return ApiResponse(
+          success: false,
+          message: 'Token Google tidak ditemukan',
+        );
+      }
+
+      final response = await _client.post(
+        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.refresh}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'access_token': googleToken}),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        final newToken = data['access_token'];
+        final newGoogleToken = data['google_token'];
+
+        await _storage.write(ApiConfig.accessTokenKey, newToken);
+        await _storage.write(ApiConfig.googleTokenKey, newGoogleToken);
+
+        return ApiResponse(
+          success: true,
+          message: 'Token berhasil diperbarui',
+          data: newToken,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: data['message'] ?? 'Gagal memperbarui token',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Refresh token gagal: $e');
+    }
+  }
+
   Future<bool> isAuthenticated() async {
     final token = await _storage.read(ApiConfig.accessTokenKey);
     return token != null;
