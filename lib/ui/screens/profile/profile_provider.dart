@@ -63,6 +63,7 @@ class ProfileProvider extends ChangeNotifier {
     String? phoneNumber,
     String? nim,
     String? jurusan,
+    String? nomorSeri,
   }) async {
     if (_isUpdating) return false;
 
@@ -77,6 +78,7 @@ class ProfileProvider extends ChangeNotifier {
         phoneNumber: phoneNumber,
         nim: nim,
         jurusan: jurusan,
+        nomorSeri: nomorSeri,
         profilePicture: uploadedImage,
       );
 

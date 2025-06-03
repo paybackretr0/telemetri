@@ -78,6 +78,7 @@ class ProfileRepository {
     String? phoneNumber,
     String? nim,
     String? jurusan,
+    String? nomorSeri,
     File? profilePicture,
   }) async {
     try {
@@ -98,6 +99,7 @@ class ProfileRepository {
         if (phoneNumber != null) request.fields['phone_number'] = phoneNumber;
         if (nim != null) request.fields['nim'] = nim;
         if (jurusan != null) request.fields['jurusan'] = jurusan;
+        if (nomorSeri != null) request.fields['nomor_seri'] = nomorSeri;
 
         final fileExtension = profilePicture.path.split('.').last.toLowerCase();
         final mimeType = fileExtension == 'png' ? 'image/png' : 'image/jpeg';
@@ -119,6 +121,7 @@ class ProfileRepository {
         if (phoneNumber != null) body['phone_number'] = phoneNumber;
         if (nim != null) body['nim'] = nim;
         if (jurusan != null) body['jurusan'] = jurusan;
+        if (nomorSeri != null) body['nomor_seri'] = nomorSeri;
 
         final response = await _client.post(
           uri,
