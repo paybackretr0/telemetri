@@ -8,6 +8,7 @@ import 'package:telemetri/ui/screens/notification/notification_provider.dart';
 import 'package:telemetri/ui/screens/calendar/calendar_provider.dart';
 import 'package:telemetri/ui/screens/home/home_provider.dart';
 import 'package:telemetri/ui/screens/history/history_provider.dart';
+import 'package:telemetri/ui/screens/attendance/scan_qr_provider.dart';
 import 'package:telemetri/ui/navigations/app_routes.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:telemetri/ui/theme/app_theme.dart';
@@ -46,6 +47,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => HomeProvider()),
         ChangeNotifierProvider(create: (_) => CalendarProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(create: (_) => ScanQrProvider()),
       ],
 
       child: Consumer<LoginProvider>(

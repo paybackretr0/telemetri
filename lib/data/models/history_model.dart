@@ -1,11 +1,9 @@
-import 'package:intl/intl.dart';
-
 class History {
   final String id;
-  final String type; // 'activity' atau 'meeting'
+  final String type;
   final String title;
   final DateTime date;
-  final String status; // 'Hadir', 'Izin', 'Alfa'
+  final String status;
   final String? checkInTime;
   final String? checkOutTime;
   final String activityType;

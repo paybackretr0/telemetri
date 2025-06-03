@@ -36,6 +36,8 @@ class ApiConfig {
 
   static const String calendar = 'calendar';
 
+  static const String absen = 'absensi/{code}';
+
   static const int statusOk = 200;
   static const int statusCreated = 201;
   static const int statusBadRequest = 400;

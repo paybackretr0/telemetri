@@ -236,6 +236,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           onRefresh: () => provider.getHistory(refresh: true),
                           child: ListView.builder(
                             controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                             itemCount:
                                 provider.filteredHistory.length +

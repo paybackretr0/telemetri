@@ -17,6 +17,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _phoneController = TextEditingController();
   final _nimController = TextEditingController();
   final _jurusanController = TextEditingController();
+  final _nomorSeriController = TextEditingController();
 
   @override
   void initState() {
@@ -28,6 +29,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _phoneController.text = provider.user!.phoneNumber ?? '';
       _nimController.text = provider.user!.nim ?? '';
       _jurusanController.text = provider.user!.jurusan ?? '';
+      _nomorSeriController.text = provider.user!.nomorSeri ?? '';
     }
   }
 
@@ -37,6 +39,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneController.dispose();
     _nimController.dispose();
     _jurusanController.dispose();
+    _nomorSeriController.dispose();
     super.dispose();
   }
 
@@ -86,6 +89,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           hint: 'Masukkan nomor telepon',
                         ),
                         const SizedBox(height: 16),
+
+                        CustomTextField(
+                          controller: _nomorSeriController,
+                          label: 'Nomor Seri',
+                          hint: 'Masukkan nomor seri',
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Nomor seri tidak boleh kosong';
+                            }
+                            return null;
+                          },
+                        ),
 
                         _buildSectionHeader(
                           'Informasi Akademik',
@@ -273,6 +288,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         phoneNumber: _phoneController.text,
         nim: _nimController.text,
         jurusan: _jurusanController.text,
+        nomorSeri: _nomorSeriController.text,
       );
 
       if (success && mounted) {
