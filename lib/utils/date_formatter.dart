@@ -1,3 +1,5 @@
+import 'package:timezone/timezone.dart' as tz;
+
 class DateFormatter {
   static final List<String> _namaBulan = [
     'Januari',
@@ -14,15 +16,31 @@ class DateFormatter {
     'Desember',
   ];
 
+  static DateTime _toWIB(DateTime dateTime) {
+    final jakarta = tz.getLocation('Asia/Jakarta');
+    final tzDateTime = tz.TZDateTime.from(dateTime, jakarta);
+    return DateTime(
+      tzDateTime.year,
+      tzDateTime.month,
+      tzDateTime.day,
+      tzDateTime.hour,
+      tzDateTime.minute,
+      tzDateTime.second,
+    );
+  }
+
   static String formatTimeRange(DateTime startTime, DateTime endTime) {
     try {
+      final wibStartTime = _toWIB(startTime);
+      final wibEndTime = _toWIB(endTime);
+
       String tanggal =
-          '${startTime.day} ${_namaBulan[startTime.month - 1]} ${startTime.year}';
+          '${wibStartTime.day} ${_namaBulan[wibStartTime.month - 1]} ${wibStartTime.year}';
 
       String waktuMulai =
-          '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+          '${wibStartTime.hour.toString().padLeft(2, '0')}:${wibStartTime.minute.toString().padLeft(2, '0')}';
       String waktuSelesai =
-          '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+          '${wibEndTime.hour.toString().padLeft(2, '0')}:${wibEndTime.minute.toString().padLeft(2, '0')}';
 
       return '$tanggal, $waktuMulai - $waktuSelesai WIB';
     } catch (e) {
@@ -32,7 +50,9 @@ class DateFormatter {
 
   static String formatTime(DateTime time) {
     try {
-      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+      final wibTime = _toWIB(time);
+
+      return '${wibTime.hour.toString().padLeft(2, '0')}:${wibTime.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return 'Waktu tidak valid';
     }
@@ -40,10 +60,12 @@ class DateFormatter {
 
   static String formatDateTimeIndonesia(DateTime date) {
     try {
-      String tanggal = '${date.day} ${_namaBulan[date.month - 1]} ${date.year}';
+      final wibDate = _toWIB(date);
+
+      String tanggal = '${wibDate.day} ${_namaBulan[wibDate.month - 1]} ${wibDate.year}';
 
       String waktu =
-          '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+          '${wibDate.hour.toString().padLeft(2, '0')}:${wibDate.minute.toString().padLeft(2, '0')}';
 
       return '$tanggal, $waktu WIB';
     } catch (e) {
@@ -53,14 +75,16 @@ class DateFormatter {
 
   static String formatDate(DateTime date, String format) {
     try {
+      final wibDate = _toWIB(date);
+
       if (format == 'dd MMMM yyyy') {
-        return '${date.day} ${_namaBulan[date.month - 1]} ${date.year}';
+        return '${wibDate.day} ${_namaBulan[wibDate.month - 1]} ${wibDate.year}';
       } else if (format == 'dd/MM/yyyy') {
-        return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+        return '${wibDate.day.toString().padLeft(2, '0')}/${wibDate.month.toString().padLeft(2, '0')}/${wibDate.year}';
       } else if (format == 'yyyy-MM-dd') {
-        return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        return '${wibDate.year}-${wibDate.month.toString().padLeft(2, '0')}-${wibDate.day.toString().padLeft(2, '0')}';
       } else {
-        return '${date.day} ${_namaBulan[date.month - 1]} ${date.year}';
+        return '${wibDate.day} ${_namaBulan[wibDate.month - 1]} ${wibDate.year}';
       }
     } catch (e) {
       return 'Tanggal tidak valid';

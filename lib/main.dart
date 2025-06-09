@@ -10,13 +10,15 @@ import 'package:telemetri/ui/screens/home/home_provider.dart';
 import 'package:telemetri/ui/screens/history/history_provider.dart';
 import 'package:telemetri/ui/screens/attendance/scan_qr_provider.dart';
 import 'package:telemetri/ui/navigations/app_routes.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:telemetri/ui/theme/app_theme.dart';
 import 'dart:io';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('id_ID', null);
+  tz.initializeTimeZones();
+  tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
   HttpOverrides.global = MyHttpOverrides();
 

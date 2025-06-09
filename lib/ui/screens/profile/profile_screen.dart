@@ -618,7 +618,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         profilePicture,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print('Error loading network image: $error');
           return const Icon(Icons.person, size: 80, color: Colors.white);
         },
       );
@@ -630,13 +629,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ? '$storageUrl${profilePicture.substring(1)}'
             : '$storageUrl$profilePicture';
 
-    print('Constructed URL: $fullUrl');
 
     return Image.network(
       fullUrl,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
-        print('Error loading network image: $error');
         return const Icon(Icons.person, size: 80, color: Colors.white);
       },
     );
