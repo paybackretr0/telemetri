@@ -14,15 +14,23 @@ import 'package:telemetri/ui/theme/app_theme.dart';
 import 'dart:io';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:firebase_core/firebase_core.dart';
+import 'package:telemetri/utils/push_notification_service.dart';
+
+final pushNotificationService = PushNotificationService();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
   tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
+  await Firebase.initializeApp();
+
+  await pushNotificationService.init();
+
   HttpOverrides.global = MyHttpOverrides();
 
-  runApp(const MyApp());
+  runApp(MyApp(pushNotificationService: pushNotificationService));
 }
 
 class MyHttpOverrides extends HttpOverrides {
@@ -35,7 +43,9 @@ class MyHttpOverrides extends HttpOverrides {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final PushNotificationService pushNotificationService;
+
+  const MyApp({super.key, required this.pushNotificationService});
 
   @override
   Widget build(BuildContext context) {
@@ -51,10 +61,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ScanQrProvider()),
       ],
-
       child: Consumer<LoginProvider>(
         builder: (context, auth, _) {
           return MaterialApp(
+            navigatorKey: pushNotificationService.navigatorKey,
             title: 'Neo Telemetri App',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,

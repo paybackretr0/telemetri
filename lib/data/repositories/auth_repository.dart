@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../remote/api_config.dart';
@@ -8,19 +9,35 @@ import '../models/user_model.dart';
 class AuthRepository {
   final http.Client _client = http.Client();
   final SecureStorage _storage = SecureStorage();
+  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
 
   Future<ApiResponse<User>> signInWithGoogle(
-    String idToken,
-    String accessToken,
-  ) async {
+      String idToken,
+      String accessToken,
+      ) async {
     try {
+      // Get FCM device token
+      String? deviceToken;
+      try {
+        deviceToken = await _fcm.getToken();
+        print('FCM Device Token: $deviceToken');
+      } catch (e) {
+        print('Failed to get FCM token: $e');
+        // Proceed with login even if token retrieval fails
+      }
+
+      // Send login request with device_token
       final response = await _client.post(
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.googleLogin}'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({'id_token': idToken, 'access_token': accessToken}),
+        body: jsonEncode({
+          'id_token': idToken,
+          'access_token': accessToken,
+          'device_token': deviceToken, // Include device_token
+        }),
       );
 
       final data = jsonDecode(response.body);
@@ -29,15 +46,13 @@ class AuthRepository {
         final user = User.fromJson(data['user']);
         final token = data['access_token'];
 
+        // Store user data and tokens
         await _storage.write(ApiConfig.accessTokenKey, token);
         await _storage.write(ApiConfig.userIdKey, user.id.toString());
         await _storage.write(ApiConfig.userNameKey, user.name);
         await _storage.write(ApiConfig.userEmailKey, user.email);
         await _storage.write(ApiConfig.userRoleKey, user.role);
-        await _storage.write(
-          ApiConfig.googleTokenKey,
-          accessToken,
-        ); // Simpan Google token
+        await _storage.write(ApiConfig.googleTokenKey, accessToken);
 
         return ApiResponse(
           success: true,
