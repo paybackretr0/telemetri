@@ -1,5 +1,6 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:io';
 import 'dart:convert';
+import 'package:firebase_messaging/firebase_messaging.dart' as firebase;
 import 'package:http/http.dart' as http;
 import '../remote/api_config.dart';
 import '../remote/api_response.dart';
@@ -9,21 +10,25 @@ import '../models/user_model.dart';
 class AuthRepository {
   final http.Client _client = http.Client();
   final SecureStorage _storage = SecureStorage();
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
 
   Future<ApiResponse<User>> signInWithGoogle(
-      String idToken,
-      String accessToken,
-      ) async {
+    String idToken,
+    String accessToken,
+  ) async {
     try {
-      // Get FCM device token
+      // Get FCM device token only for Android
       String? deviceToken;
-      try {
-        deviceToken = await _fcm.getToken();
-        print('FCM Device Token: $deviceToken');
-      } catch (e) {
-        print('Failed to get FCM token: $e');
-        // Proceed with login even if token retrieval fails
+      if (Platform.isAndroid) {
+        try {
+          // Dynamic import Firebase Messaging
+
+          final fcm = firebase.FirebaseMessaging.instance;
+          deviceToken = await fcm.getToken();
+          print('FCM Device Token: $deviceToken');
+        } catch (e) {
+          print('Failed to get FCM token: $e');
+          // Proceed with login even if token retrieval fails
+        }
       }
 
       // Send login request with device_token
@@ -36,7 +41,7 @@ class AuthRepository {
         body: jsonEncode({
           'id_token': idToken,
           'access_token': accessToken,
-          'device_token': deviceToken, // Include device_token
+          'device_token': deviceToken, // Include device_token (null for iOS)
         }),
       );
 

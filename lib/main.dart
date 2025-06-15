@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart' as firebaseCore;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:telemetri/ui/screens/auth/login_provider.dart';
@@ -14,23 +15,70 @@ import 'package:telemetri/ui/theme/app_theme.dart';
 import 'dart:io';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:firebase_core/firebase_core.dart';
-import 'package:telemetri/utils/push_notification_service.dart';
 
-final pushNotificationService = PushNotificationService();
+// Conditional imports
+import 'package:telemetri/utils/push_notification_service.dart'
+    if (dart.library.io) 'package:telemetri/utils/push_notification_service.dart'
+    if (dart.library.js) 'package:telemetri/utils/push_notification_service_stub.dart';
+
+dynamic pushNotificationService;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  tz.initializeTimeZones();
-  tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
-  await Firebase.initializeApp();
+  try {
+    tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
-  await pushNotificationService.init();
+    // Initialize Firebase dan push notifications hanya untuk Android
+    if (Platform.isAndroid) {
+      try {
+        await firebaseCore.Firebase.initializeApp();
+        print('Firebase initialized successfully for Android');
 
-  HttpOverrides.global = MyHttpOverrides();
+        pushNotificationService = PushNotificationService();
+        await pushNotificationService!.init();
+        print('Push notification service initialized for Android');
+      } catch (e) {
+        print('Error initializing Firebase for Android: $e');
+      }
+    } else {
+      print('Firebase and push notifications skipped for iOS');
+    }
 
-  runApp(MyApp(pushNotificationService: pushNotificationService));
+    HttpOverrides.global = MyHttpOverrides();
+
+    runApp(MyApp(pushNotificationService: pushNotificationService));
+  } catch (e) {
+    print('Error during initialization: $e');
+    runApp(ErrorApp(error: e.toString()));
+  }
+}
+
+class ErrorApp extends StatelessWidget {
+  final String error;
+
+  const ErrorApp({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error, size: 64, color: Colors.red),
+              SizedBox(height: 16),
+              Text('Initialization Error'),
+              SizedBox(height: 8),
+              Text(error, textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class MyHttpOverrides extends HttpOverrides {
@@ -43,9 +91,9 @@ class MyHttpOverrides extends HttpOverrides {
 }
 
 class MyApp extends StatelessWidget {
-  final PushNotificationService pushNotificationService;
+  final dynamic pushNotificationService;
 
-  const MyApp({super.key, required this.pushNotificationService});
+  const MyApp({super.key, this.pushNotificationService});
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +112,7 @@ class MyApp extends StatelessWidget {
       child: Consumer<LoginProvider>(
         builder: (context, auth, _) {
           return MaterialApp(
-            navigatorKey: pushNotificationService.navigatorKey,
+            navigatorKey: pushNotificationService?.navigatorKey,
             title: 'Neo Telemetri App',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,

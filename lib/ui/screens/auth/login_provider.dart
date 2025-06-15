@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../data/repositories/auth_repository.dart';
@@ -24,7 +26,7 @@ class LoginProvider extends ChangeNotifier {
         'https://www.googleapis.com/auth/calendar',
         'https://www.googleapis.com/auth/calendar.events',
       ],
-      serverClientId: EnvConfig.googleClientId,
+      serverClientId: Platform.isAndroid ? EnvConfig.googleWebClientId : null,
     );
   }
 
@@ -49,79 +51,109 @@ class LoginProvider extends ChangeNotifier {
       _clearError();
       _setLoading(true);
 
-      // Force sign out to clear any existing sessions
-      await _googleSignIn.signOut();
+      print(
+        'Starting Google Sign-In process for ${Platform.operatingSystem}...',
+      );
 
-      // Add a delay to ensure the previous sign-out is completed
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // Sign in with catch for PlatformException
-      GoogleSignInAccount? googleUser;
+      // Clear any existing session
       try {
-        // Disable debug prints to reduce noise
-        debugPrint = (String? message, {int? wrapWidth}) {};
-
-        googleUser = await _googleSignIn.signIn();
-
-        // Restore debug prints
-        debugPrint = debugPrintThrottled;
+        await _googleSignIn.signOut();
+        print('Previous session cleared');
       } catch (e) {
-        print('Google Sign-In error caught: $e');
-        // If we get the deadlock error, try the silent approach
-        if (e.toString().contains('deadlock')) {
-          try {
-            googleUser = await _googleSignIn.signInSilently();
-          } catch (silentError) {
-            _setError('Failed to sign in with Google: $silentError');
-            _setLoading(false);
-            return false;
-          }
+        print('Sign out error (ignorable): $e');
+      }
+
+      // Wait for sign out to complete
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      // Check if Google Play Services is available (Android only)
+      if (Platform.isAndroid) {
+        try {
+          await _googleSignIn.isSignedIn();
+        } catch (e) {
+          print('Google Play Services error: $e');
+          _setError(
+            'Google Play Services not available. Please update Google Play Services.',
+          );
+          return false;
         }
       }
 
+      // Start sign in
+      print('Initiating Google Sign-In...');
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
       if (googleUser == null) {
-        _setLoading(false);
-        _setError('Sign in was cancelled or failed');
+        print('Google Sign-In cancelled by user');
+        _setError('Sign in was cancelled');
         return false;
       }
 
-      // Get authentication tokens
-      GoogleSignInAuthentication? googleAuth;
-      try {
-        googleAuth = await googleUser.authentication;
-      } catch (e) {
-        print('Authentication error: $e');
-        _setError('Failed to authenticate with Google: $e');
-        _setLoading(false);
-        return false;
-      }
+      print('Google user obtained: ${googleUser.email}');
+
+      // Get authentication
+      print('Getting authentication tokens...');
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       final String? idToken = googleAuth.idToken;
       final String? accessToken = googleAuth.accessToken;
 
       if (idToken == null || accessToken == null) {
+        print(
+          'Failed to get tokens: idToken=${idToken != null}, accessToken=${accessToken != null}',
+        );
         _setError('Failed to obtain authentication tokens');
-        _setLoading(false);
         return false;
       }
 
+      print('Tokens obtained successfully');
+
       // Sign in with backend
+      print('Signing in with backend...');
       final response = await _authRepository.signInWithGoogle(
         idToken,
         accessToken,
       );
 
       if (response.success && response.data != null) {
+        print('Backend authentication successful');
         _user = response.data;
         notifyListeners();
         return true;
       } else {
+        print('Backend authentication failed: ${response.message}');
         _setError(response.message);
         return false;
       }
     } catch (e) {
-      _setError('Sign in failed: $e');
+      print('Google Sign-In error: $e');
+
+      // Handle specific error codes
+      if (e.toString().contains('ApiException: 10')) {
+        _setError(
+          'Google Sign-In configuration error. Please check app settings.',
+        );
+      } else if (e.toString().contains('network_error')) {
+        _setError('Network error. Please check your internet connection.');
+      } else {
+        _setError('Sign in failed: $e');
+      }
       return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> logout() async {
+    try {
+      _setLoading(true);
+      await _authRepository.logout();
+      await _googleSignIn.signOut();
+      _user = null;
+      notifyListeners();
+    } catch (e) {
+      _setError('Logout failed: $e');
     } finally {
       _setLoading(false);
     }
