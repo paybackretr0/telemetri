@@ -3,8 +3,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:telemetri/ui/screens/delegation/delegation_screen.dart';
+import 'package:telemetri/data/environment/env_config.dart';
 
 // Background message handler
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -15,54 +17,73 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 class PushNotificationService {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   Future<void> init() async {
-    await _fcm.requestPermission();
-    // Get initial token
-    String? token = await _fcm.getToken();
-    print('FCM Token: $token');
-    if (token != null) {
-      await _sendTokenToBackend(token);
+    // Only initialize push notifications for Android
+    if (!Platform.isAndroid) {
+      print('Push notifications not supported on this platform');
+      return;
     }
-    // Handle token refresh
-    _fcm.onTokenRefresh.listen((newToken) async {
-      print('New FCM Token: $newToken');
-      await _sendTokenToBackend(newToken);
-    });
-    // Foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Foreground message: ${message.notification?.title}');
-      if (message.notification != null) {
-        final context = navigatorKey.currentState?.context;
-        if (context != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${message.notification?.title}: ${message.notification?.body}',
-              ),
-              action: SnackBarAction(
-                label: 'View',
-                onPressed: () => _handleMessage(message),
-              ),
-            ),
-          );
-        }
+
+    try {
+      await _fcm.requestPermission();
+
+      // Get initial token
+      String? token = await _fcm.getToken();
+      print('FCM Token: $token');
+      if (token != null) {
+        await _sendTokenToBackend(token);
       }
-    });
-    // Background messages
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    // Handle notification opened from terminated state
-    RemoteMessage? initialMessage = await _fcm.getInitialMessage();
-    if (initialMessage != null) {
-      _handleMessage(initialMessage);
+
+      // Handle token refresh
+      _fcm.onTokenRefresh.listen((newToken) async {
+        print('New FCM Token: $newToken');
+        await _sendTokenToBackend(newToken);
+      });
+
+      // Foreground messages
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        print('Foreground message: ${message.notification?.title}');
+        if (message.notification != null) {
+          final context = navigatorKey.currentState?.context;
+          if (context != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${message.notification?.title}: ${message.notification?.body}',
+                ),
+                action: SnackBarAction(
+                  label: 'View',
+                  onPressed: () => _handleMessage(message),
+                ),
+              ),
+            );
+          }
+        }
+      });
+
+      // Background messages
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
+
+      // Handle notification opened from terminated state
+      RemoteMessage? initialMessage = await _fcm.getInitialMessage();
+      if (initialMessage != null) {
+        _handleMessage(initialMessage);
+      }
+
+      // Handle notification opened from background
+      FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+    } catch (e) {
+      print('Error initializing push notifications: $e');
     }
-    // Handle notification opened from background
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
   }
 
   Future<void> _sendTokenToBackend(String token) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.5:8000/api/update-device-token'),
+        Uri.parse('${EnvConfig.apiBaseUrl}update-device-token'),
         headers: {
           'Authorization': 'Bearer <your-auth-token>',
           'Content-Type': 'application/json',
