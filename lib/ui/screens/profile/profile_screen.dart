@@ -8,6 +8,7 @@ import 'package:telemetri/ui/screens/permission/permission_screen.dart';
 import 'package:telemetri/ui/screens/faq/faq_screen.dart';
 import 'package:telemetri/ui/screens/about/about_screen.dart';
 import 'package:telemetri/utils/date_formatter.dart';
+import 'package:telemetri/utils/platform_helper.dart';
 import '../../../data/environment/env_config.dart';
 import '../../widgets/custom_form_fields.dart';
 
@@ -285,11 +286,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
 
                   const SizedBox(height: 32),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildLogoutButton(context),
-                  ),
+                  if (!PlatformHelper.isWeb)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildLogoutButton(context),
+                    ),
 
                   const SizedBox(height: 32),
                 ],
@@ -628,7 +629,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         profilePicture.startsWith('/')
             ? '$storageUrl${profilePicture.substring(1)}'
             : '$storageUrl$profilePicture';
-
 
     return Image.network(
       fullUrl,

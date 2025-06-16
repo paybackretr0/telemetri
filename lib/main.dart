@@ -1,5 +1,6 @@
-import 'package:firebase_core/firebase_core.dart' as firebaseCore;
+import 'package:firebase_core/firebase_core.dart' as firebase;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:telemetri/ui/screens/auth/login_provider.dart';
 import 'package:telemetri/ui/screens/profile/profile_provider.dart';
@@ -15,14 +16,10 @@ import 'package:telemetri/ui/theme/app_theme.dart';
 import 'dart:io';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-
-// Conditional imports
-import 'package:telemetri/utils/push_notification_service.dart'
-    if (dart.library.io) 'package:telemetri/utils/push_notification_service.dart'
-    if (dart.library.js) 'package:telemetri/utils/push_notification_service_stub.dart';
+import 'package:telemetri/utils/push_notification_service.dart';
+import 'package:telemetri/utils/platform_helper.dart';
 
 dynamic pushNotificationService;
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -30,27 +27,33 @@ void main() async {
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
-    // Initialize Firebase dan push notifications hanya untuk Android
-    if (Platform.isAndroid) {
+    if (PlatformHelper.isAndroid) {
       try {
-        await firebaseCore.Firebase.initializeApp();
-        print('Firebase initialized successfully for Android');
+        await firebase.Firebase.initializeApp();
+        debugPrint('Firebase initialized successfully for Android');
 
         pushNotificationService = PushNotificationService();
         await pushNotificationService!.init();
-        print('Push notification service initialized for Android');
       } catch (e) {
-        print('Error initializing Firebase for Android: $e');
+        debugPrint('Error initializing Firebase for Android: $e');
+      }
+    } else if (PlatformHelper.isWeb) {
+      if (kDebugMode) {
+        debugPrint('Running on web - Firebase and push notifications skipped');
       }
     } else {
-      print('Firebase and push notifications skipped for iOS');
+      debugPrint('Firebase and push notifications skipped for iOS');
     }
 
-    HttpOverrides.global = MyHttpOverrides();
+    if (PlatformHelper.isMobile) {
+      HttpOverrides.global = MyHttpOverrides();
+    }
 
     runApp(MyApp(pushNotificationService: pushNotificationService));
   } catch (e) {
-    print('Error during initialization: $e');
+    if (kDebugMode) {
+      debugPrint('Error during initialization: $e');
+    }
     runApp(ErrorApp(error: e.toString()));
   }
 }
@@ -63,15 +66,16 @@ class ErrorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error, size: 64, color: Colors.red),
-              SizedBox(height: 16),
-              Text('Initialization Error'),
-              SizedBox(height: 8),
+              const Icon(Icons.error, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text('Initialization Error'),
+              const SizedBox(height: 8),
               Text(error, textAlign: TextAlign.center),
             ],
           ),
@@ -109,17 +113,22 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ScanQrProvider()),
       ],
-      child: Consumer<LoginProvider>(
-        builder: (context, auth, _) {
-          return MaterialApp(
-            navigatorKey: pushNotificationService?.navigatorKey,
-            title: 'Neo Telemetri App',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            initialRoute: RouteNames.splash,
-            onGenerateRoute: AppRoutes.generateRoute,
-            debugShowCheckedModeBanner: false,
-          );
+      child: MaterialApp(
+        navigatorKey: pushNotificationService?.navigatorKey,
+        title: 'Neo Telemetri App',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        initialRoute: RouteNames.initialRoute,
+        onGenerateRoute: AppRoutes.generateRoute,
+        debugShowCheckedModeBanner: false,
+        builder: (context, child) {
+          if (kIsWeb) {
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+              child: child!,
+            );
+          }
+          return child!;
         },
       ),
     );

@@ -1,21 +1,39 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:telemetri/utils/platform_helper.dart';
+import 'package:web/web.dart' as web;
 
 class SecureStorage {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   Future<void> write(String key, String value) async {
-    await _storage.write(key: key, value: value);
+    if (PlatformHelper.isWeb) {
+      web.window.localStorage.setItem(key, value);
+    } else {
+      await _secureStorage.write(key: key, value: value);
+    }
   }
 
   Future<String?> read(String key) async {
-    return await _storage.read(key: key);
+    if (PlatformHelper.isWeb) {
+      return web.window.localStorage.getItem(key);
+    } else {
+      return await _secureStorage.read(key: key);
+    }
   }
 
   Future<void> delete(String key) async {
-    await _storage.delete(key: key);
+    if (PlatformHelper.isWeb) {
+      web.window.localStorage.removeItem(key);
+    } else {
+      await _secureStorage.delete(key: key);
+    }
   }
 
   Future<void> deleteAll() async {
-    await _storage.deleteAll();
+    if (PlatformHelper.isWeb) {
+      web.window.localStorage.clear();
+    } else {
+      await _secureStorage.deleteAll();
+    }
   }
 }
