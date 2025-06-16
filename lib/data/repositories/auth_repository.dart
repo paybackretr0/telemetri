@@ -1,7 +1,8 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart' as firebase;
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import 'package:telemetri/utils/platform_helper.dart';
 import '../remote/api_config.dart';
 import '../remote/api_response.dart';
 import '../local/secure_storage.dart';
@@ -13,37 +14,75 @@ class AuthRepository {
 
   Future<ApiResponse<User>> signInWithGoogle(
     String idToken,
-    String accessToken,
-  ) async {
+    String accessToken, {
+    Map<String, dynamic>? userInfo,
+  }) async {
     try {
-      // Get FCM device token only for Android
       String? deviceToken;
-      if (Platform.isAndroid) {
+      if (PlatformHelper.isAndroid) {
         try {
-          // Dynamic import Firebase Messaging
-
           final fcm = firebase.FirebaseMessaging.instance;
           deviceToken = await fcm.getToken();
-          print('FCM Device Token: $deviceToken');
+          if (kDebugMode) {
+            debugPrint('FCM Device Token: $deviceToken');
+          }
         } catch (e) {
-          print('Failed to get FCM token: $e');
-          // Proceed with login even if token retrieval fails
+          if (kDebugMode) {
+            debugPrint('Failed to get FCM token: $e');
+          }
+        }
+      } else if (PlatformHelper.isWeb) {
+        if (kDebugMode) {
+          debugPrint('Running on web - FCM token not applicable');
         }
       }
 
-      // Send login request with device_token
+      Map<String, dynamic> requestBody = {
+        'id_token': idToken,
+        'access_token': accessToken,
+      };
+
+      if (PlatformHelper.isWeb && userInfo != null) {
+        requestBody.addAll({
+          'platform': 'web',
+          'user_info': {
+            'id': userInfo['id'],
+            'email': userInfo['email'],
+            'name': userInfo['name'],
+            'picture': userInfo['picture'],
+            'verified_email': userInfo['verified_email'] ?? true,
+          },
+        });
+      } else {
+        requestBody['platform'] = 'mobile';
+
+        if (PlatformHelper.isMobile && deviceToken != null) {
+          requestBody['device_token'] = deviceToken;
+        }
+      }
+
+      if (kDebugMode) {
+        debugPrint('Sending authentication request...');
+        debugPrint('Request body keys: ${requestBody.keys.toList()}');
+        debugPrint('Platform: ${requestBody['platform']}');
+        if (PlatformHelper.isWeb) {
+          debugPrint('User email: ${requestBody['user_info']?['email']}');
+        }
+      }
+
       final response = await _client.post(
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.googleLogin}'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({
-          'id_token': idToken,
-          'access_token': accessToken,
-          'device_token': deviceToken, // Include device_token (null for iOS)
-        }),
+        body: jsonEncode(requestBody),
       );
+
+      if (kDebugMode) {
+        debugPrint('Response status: ${response.statusCode}');
+        debugPrint('Response body: ${response.body}');
+      }
 
       final data = jsonDecode(response.body);
 
@@ -51,7 +90,6 @@ class AuthRepository {
         final user = User.fromJson(data['user']);
         final token = data['access_token'];
 
-        // Store user data and tokens
         await _storage.write(ApiConfig.accessTokenKey, token);
         await _storage.write(ApiConfig.userIdKey, user.id.toString());
         await _storage.write(ApiConfig.userNameKey, user.name);
@@ -59,18 +97,41 @@ class AuthRepository {
         await _storage.write(ApiConfig.userRoleKey, user.role);
         await _storage.write(ApiConfig.googleTokenKey, accessToken);
 
+        if (kDebugMode) {
+          debugPrint('User data stored successfully');
+        }
+
         return ApiResponse(
           success: true,
           message: 'Login successful',
           data: user,
         );
       } else {
-        return ApiResponse(
-          success: false,
-          message: data['message'] ?? 'Authentication failed',
-        );
+        String errorMessage = 'Authentication failed';
+
+        if (data['errors'] != null) {
+          Map<String, dynamic> errors = data['errors'];
+          List<String> errorMessages = [];
+
+          errors.forEach((key, value) {
+            if (value is List) {
+              errorMessages.addAll(value.cast<String>());
+            } else {
+              errorMessages.add(value.toString());
+            }
+          });
+
+          errorMessage = errorMessages.join(', ');
+        } else if (data['message'] != null) {
+          errorMessage = data['message'];
+        }
+
+        return ApiResponse(success: false, message: errorMessage);
       }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Auth repository error: $e');
+      }
       return ApiResponse(success: false, message: 'Sign in failed: $e');
     }
   }

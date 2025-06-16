@@ -1,14 +1,15 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:telemetri/utils/platform_helper.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/environment/env_config.dart';
 
 class LoginProvider extends ChangeNotifier {
   final AuthRepository _authRepository = AuthRepository();
-  late final GoogleSignIn _googleSignIn;
+  GoogleSignIn? _googleSignIn;
 
   User? _user;
   bool _isLoading = false;
@@ -19,15 +20,43 @@ class LoginProvider extends ChangeNotifier {
   }
 
   void _initGoogleSignIn() {
-    _googleSignIn = GoogleSignIn(
-      scopes: [
-        'email',
-        'profile',
-        'https://www.googleapis.com/auth/calendar',
-        'https://www.googleapis.com/auth/calendar.events',
-      ],
-      serverClientId: Platform.isAndroid ? EnvConfig.googleWebClientId : null,
-    );
+    try {
+      if (PlatformHelper.isWeb) {
+        _googleSignIn = GoogleSignIn(
+          clientId: EnvConfig.googleWebClientId,
+          scopes: [
+            'email',
+            'profile',
+            'openid',
+            'https://www.googleapis.com/auth/calendar',
+            'https://www.googleapis.com/auth/calendar.events',
+          ],
+        );
+      } else {
+        _googleSignIn = GoogleSignIn(
+          scopes: [
+            'email',
+            'profile',
+            'openid',
+            'https://www.googleapis.com/auth/calendar',
+            'https://www.googleapis.com/auth/calendar.events',
+          ],
+          serverClientId:
+              PlatformHelper.isAndroid ? EnvConfig.googleWebClientId : null,
+        );
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          'GoogleSignIn initialized for ${PlatformHelper.isWeb ? "Web" : "Mobile"}',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error initializing GoogleSignIn: $e');
+      }
+      _setError('Failed to initialize Google Sign-In: $e');
+    }
   }
 
   User? get user => _user;
@@ -46,110 +75,226 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>?> _getUserInfoFromGoogle(
+    String accessToken,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://www.googleapis.com/oauth2/v2/userinfo'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        if (kDebugMode) {
+          debugPrint('Failed to get user info: ${response.statusCode}');
+        }
+        return null;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error getting user info: $e');
+      }
+      return null;
+    }
+  }
+
   Future<bool> signInWithGoogle() async {
+    if (_googleSignIn == null) {
+      _setError('Google Sign-In not initialized');
+      return false;
+    }
+
     try {
       _clearError();
       _setLoading(true);
 
-      print(
-        'Starting Google Sign-In process for ${Platform.operatingSystem}...',
-      );
+      final platformName =
+          PlatformHelper.isWeb
+              ? 'Web'
+              : PlatformHelper.isAndroid
+              ? 'Android'
+              : 'iOS';
 
-      // Clear any existing session
-      try {
-        await _googleSignIn.signOut();
-        print('Previous session cleared');
-      } catch (e) {
-        print('Sign out error (ignorable): $e');
+      if (kDebugMode) {
+        debugPrint('Starting Google Sign-In process for $platformName...');
       }
 
-      // Wait for sign out to complete
-      await Future.delayed(const Duration(milliseconds: 1000));
-
-      // Check if Google Play Services is available (Android only)
-      if (Platform.isAndroid) {
-        try {
-          await _googleSignIn.isSignedIn();
-        } catch (e) {
-          print('Google Play Services error: $e');
-          _setError(
-            'Google Play Services not available. Please update Google Play Services.',
-          );
-          return false;
+      try {
+        await _googleSignIn!.signOut();
+        if (kDebugMode) {
+          debugPrint('Previous session cleared');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Sign out error (ignorable): $e');
         }
       }
 
-      // Start sign in
-      print('Initiating Google Sign-In...');
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (kDebugMode) {
+        debugPrint('Initiating Google Sign-In...');
+      }
+      final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
 
       if (googleUser == null) {
-        print('Google Sign-In cancelled by user');
+        if (kDebugMode) {
+          debugPrint('Google Sign-In cancelled by user');
+        }
         _setError('Sign in was cancelled');
         return false;
       }
 
-      print('Google user obtained: ${googleUser.email}');
+      if (kDebugMode) {
+        debugPrint('Google user obtained: ${googleUser.email}');
+      }
 
-      // Get authentication
-      print('Getting authentication tokens...');
+      if (kDebugMode) {
+        debugPrint('Getting authentication tokens...');
+      }
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
-      final String? idToken = googleAuth.idToken;
+      String? idToken = googleAuth.idToken;
       final String? accessToken = googleAuth.accessToken;
 
-      if (idToken == null || accessToken == null) {
-        print(
-          'Failed to get tokens: idToken=${idToken != null}, accessToken=${accessToken != null}',
-        );
-        _setError('Failed to obtain authentication tokens');
+      if (kDebugMode) {
+        debugPrint('idToken available: ${idToken != null}');
+        debugPrint('accessToken available: ${accessToken != null}');
+      }
+
+      if (accessToken == null) {
+        if (kDebugMode) {
+          debugPrint('No access token available');
+        }
+        _setError('Failed to obtain access token');
         return false;
       }
 
-      print('Tokens obtained successfully');
+      Map<String, dynamic>? userInfo;
+      if (PlatformHelper.isWeb) {
+        if (kDebugMode) {
+          debugPrint('Getting user info from Google API for web...');
+        }
+        userInfo = await _getUserInfoFromGoogle(accessToken);
+        if (userInfo == null) {
+          _setError('Failed to get user information');
+          return false;
+        }
 
-      // Sign in with backend
-      print('Signing in with backend...');
+        if (idToken == null) {
+          idToken = _createWebIdToken(userInfo, accessToken);
+          if (kDebugMode) {
+            debugPrint('Created web ID token');
+          }
+        }
+      }
+
+      if (idToken == null) {
+        if (kDebugMode) {
+          debugPrint('No ID token available');
+        }
+        _setError('Failed to obtain ID token');
+        return false;
+      }
+
+      if (kDebugMode) {
+        debugPrint('Tokens obtained successfully');
+        debugPrint('ID Token length: ${idToken.length}');
+        debugPrint('Access Token length: ${accessToken.length}');
+      }
+
+      if (kDebugMode) {
+        debugPrint('Signing in with backend...');
+      }
+
       final response = await _authRepository.signInWithGoogle(
         idToken,
         accessToken,
+        userInfo: userInfo,
       );
 
       if (response.success && response.data != null) {
-        print('Backend authentication successful');
+        if (kDebugMode) {
+          debugPrint('Backend authentication successful');
+        }
         _user = response.data;
         notifyListeners();
         return true;
       } else {
-        print('Backend authentication failed: ${response.message}');
+        if (kDebugMode) {
+          debugPrint('Backend authentication failed: ${response.message}');
+        }
         _setError(response.message);
         return false;
       }
     } catch (e) {
-      print('Google Sign-In error: $e');
-
-      // Handle specific error codes
-      if (e.toString().contains('ApiException: 10')) {
-        _setError(
-          'Google Sign-In configuration error. Please check app settings.',
-        );
-      } else if (e.toString().contains('network_error')) {
-        _setError('Network error. Please check your internet connection.');
-      } else {
-        _setError('Sign in failed: $e');
+      if (kDebugMode) {
+        debugPrint('Google Sign-In error: $e');
       }
+
+      String errorMessage = 'Sign in failed';
+
+      if (e.toString().contains('ApiException: 10')) {
+        errorMessage =
+            'Google Sign-In configuration error. Please check app settings.';
+      } else if (e.toString().contains('network_error')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (e.toString().contains('popup_closed_by_user')) {
+        errorMessage = 'Sign in was cancelled';
+      } else if (e.toString().contains('access_denied')) {
+        errorMessage = 'Access denied. Please allow permissions.';
+      } else {
+        errorMessage = 'Sign in failed: $e';
+      }
+
+      _setError(errorMessage);
       return false;
     } finally {
       _setLoading(false);
     }
   }
 
+  String _createWebIdToken(Map<String, dynamic> userInfo, String accessToken) {
+    final header = {'alg': 'none', 'typ': 'JWT'};
+
+    final payload = {
+      'iss': 'https://accounts.google.com',
+      'aud': EnvConfig.googleWebClientId,
+      'sub': userInfo['id'],
+      'email': userInfo['email'],
+      'email_verified': userInfo['verified_email'] ?? true,
+      'name': userInfo['name'],
+      'picture': userInfo['picture'],
+      'given_name': userInfo['given_name'],
+      'family_name': userInfo['family_name'],
+      'locale': userInfo['locale'] ?? 'en',
+      'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      'exp': (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600,
+      'platform': 'web',
+      'google_access_token': accessToken,
+    };
+
+    final headerEncoded = base64Url.encode(utf8.encode(jsonEncode(header)));
+    final payloadEncoded = base64Url.encode(utf8.encode(jsonEncode(payload)));
+
+    final signature = 'web-token';
+
+    return '$headerEncoded.$payloadEncoded.$signature';
+  }
+
   Future<void> logout() async {
     try {
       _setLoading(true);
       await _authRepository.logout();
-      await _googleSignIn.signOut();
+      if (_googleSignIn != null) {
+        await _googleSignIn!.signOut();
+      }
       _user = null;
       notifyListeners();
     } catch (e) {
@@ -166,6 +311,11 @@ class LoginProvider extends ChangeNotifier {
 
   void _setError(String? error) {
     _error = error;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _error = null;
     notifyListeners();
   }
 

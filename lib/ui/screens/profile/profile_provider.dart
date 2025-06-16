@@ -1,7 +1,8 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:telemetri/utils/platform_helper.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/environment/env_config.dart';
 import '../../../data/repositories/profile_repository.dart';
@@ -10,16 +11,43 @@ import '../../../data/models/user_model.dart';
 class ProfileProvider extends ChangeNotifier {
   final AuthRepository _authRepository = AuthRepository();
   final ProfileRepository _profileRepository = ProfileRepository();
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email'],
-    serverClientId: EnvConfig.googleClientId,
-  );
+  GoogleSignIn? _googleSignIn;
 
   bool _isLoading = false;
   bool _isUpdating = false;
   String? _error;
   User? _user;
   File? _selectedImage;
+
+  ProfileProvider() {
+    _initGoogleSignIn();
+  }
+
+  void _initGoogleSignIn() {
+    try {
+      if (PlatformHelper.isWeb) {
+        _googleSignIn = GoogleSignIn(
+          clientId: EnvConfig.googleWebClientId,
+          scopes: ['email'],
+        );
+      } else {
+        _googleSignIn = GoogleSignIn(
+          scopes: ['email'],
+          serverClientId: EnvConfig.googleClientId,
+        );
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          'ProfileProvider GoogleSignIn initialized for ${PlatformHelper.isWeb ? "Web" : "Mobile"}',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error initializing GoogleSignIn in ProfileProvider: $e');
+      }
+    }
+  }
 
   bool get isLoading => _isLoading;
   bool get isUpdating => _isUpdating;
@@ -49,12 +77,21 @@ class ProfileProvider extends ChangeNotifier {
   }
 
   Future<void> pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (!PlatformHelper.isMobile) {
+      _setError('Image picking is only available on mobile devices');
+      return;
+    }
 
-    if (image != null) {
-      _selectedImage = File(image.path);
-      notifyListeners();
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image != null) {
+        _selectedImage = File(image.path);
+        notifyListeners();
+      }
+    } catch (e) {
+      _setError('Failed to pick image: $e');
     }
   }
 
@@ -71,7 +108,8 @@ class ProfileProvider extends ChangeNotifier {
       _setUpdating(true);
       _clearError();
 
-      final File? uploadedImage = _selectedImage;
+      final File? uploadedImage =
+          PlatformHelper.isMobile ? _selectedImage : null;
 
       final response = await _profileRepository.updateProfile(
         name: name,
@@ -110,10 +148,14 @@ class ProfileProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      try {
-        await _googleSignIn.disconnect();
-      } catch (e) {
-        _setError('Google sign out failed: $e');
+      if (_googleSignIn != null) {
+        try {
+          await _googleSignIn!.disconnect();
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Google sign out failed: $e');
+          }
+        }
       }
 
       final response = await _authRepository.logout();

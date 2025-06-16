@@ -3,15 +3,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:telemetri/ui/screens/delegation/delegation_screen.dart';
 import 'package:telemetri/data/environment/env_config.dart';
+import 'package:telemetri/utils/platform_helper.dart';
 
-// Background message handler
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  print('Background message: ${message.notification?.title}');
 }
 
 class PushNotificationService {
@@ -19,31 +16,23 @@ class PushNotificationService {
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   Future<void> init() async {
-    // Only initialize push notifications for Android
-    if (!Platform.isAndroid) {
-      print('Push notifications not supported on this platform');
+    if (!PlatformHelper.isAndroid) {
       return;
     }
 
     try {
       await _fcm.requestPermission();
 
-      // Get initial token
       String? token = await _fcm.getToken();
-      print('FCM Token: $token');
       if (token != null) {
         await _sendTokenToBackend(token);
       }
 
-      // Handle token refresh
       _fcm.onTokenRefresh.listen((newToken) async {
-        print('New FCM Token: $newToken');
         await _sendTokenToBackend(newToken);
       });
 
-      // Foreground messages
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        print('Foreground message: ${message.notification?.title}');
         if (message.notification != null) {
           final context = navigatorKey.currentState?.context;
           if (context != null) {
@@ -62,21 +51,18 @@ class PushNotificationService {
         }
       });
 
-      // Background messages
       FirebaseMessaging.onBackgroundMessage(
         _firebaseMessagingBackgroundHandler,
       );
 
-      // Handle notification opened from terminated state
       RemoteMessage? initialMessage = await _fcm.getInitialMessage();
       if (initialMessage != null) {
         _handleMessage(initialMessage);
       }
 
-      // Handle notification opened from background
       FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
     } catch (e) {
-      print('Error initializing push notifications: $e');
+      return;
     }
   }
 
@@ -92,19 +78,15 @@ class PushNotificationService {
         body: jsonEncode({'device_token': token}),
       );
       if (response.statusCode == 200) {
-        print('Token sent to backend successfully');
-      } else {
-        print('Failed to send token: ${response.body}');
-      }
+      } else {}
     } catch (e) {
-      print('Error sending token: $e');
+      return;
     }
   }
 
   void _handleMessage(RemoteMessage message) {
     String? delegationId = message.data['delegation_id'];
     if (delegationId != null) {
-      print('Navigate to delegation: $delegationId');
       navigatorKey.currentState?.push(
         MaterialPageRoute(builder: (context) => DelegationScreen()),
       );
