@@ -55,6 +55,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
+  Future<void> _handleRefresh() async {
+    final provider = Provider.of<HistoryProvider>(context, listen: false);
+    await provider.getHistory(refresh: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,6 +67,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         builder: (context, provider, _) {
           return Column(
             children: [
+              // Filter tabs
               Container(
                 padding: const EdgeInsets.symmetric(
                   vertical: 12,
@@ -150,119 +156,140 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
 
+              // Counter
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.list_alt,
-                          size: 18,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${provider.filteredHistory.length} ${_getCounterLabel(provider.selectedFilter)}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade700,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                    const Icon(Icons.list_alt, size: 18, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${provider.filteredHistory.length} ${_getCounterLabel(provider.selectedFilter)}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
               ),
 
+              // Content - Semua kondisi dibungkus dengan RefreshIndicator
               Expanded(
-                child:
-                    provider.isLoading && provider.historyItems.isEmpty
-                        ? const Center(child: CircularProgressIndicator())
-                        : provider.error != null &&
-                            provider.historyItems.isEmpty
-                        ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                size: 48,
-                                color: Colors.red.shade300,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                provider.error!,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey.shade600,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed:
-                                    () => provider.getHistory(refresh: true),
-                                child: const Text('Coba Lagi'),
-                              ),
-                            ],
-                          ),
-                        )
-                        : provider.filteredHistory.isEmpty
-                        ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.history_toggle_off,
-                                size: 48,
-                                color: Colors.grey.shade400,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Tidak ada riwayat ${provider.selectedFilter}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey.shade600,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                        : RefreshIndicator(
-                          onRefresh: () => provider.getHistory(refresh: true),
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                            itemCount:
-                                provider.filteredHistory.length +
-                                (provider.hasMoreData ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index >= provider.filteredHistory.length) {
-                                return Container(
-                                  padding: const EdgeInsets.all(16),
-                                  alignment: Alignment.center,
-                                  child: const CircularProgressIndicator(),
-                                );
-                              }
-
-                              final item = provider.filteredHistory[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _buildHistoryCard(item),
-                              );
-                            },
-                          ),
-                        ),
+                child: RefreshIndicator(
+                  onRefresh: _handleRefresh,
+                  displacement: 40.0,
+                  strokeWidth: 2.0,
+                  child: _buildContent(provider),
+                ),
               ),
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildContent(HistoryProvider provider) {
+    // Loading state untuk data pertama kali
+    if (provider.isLoading && provider.historyItems.isEmpty) {
+      return const SingleChildScrollView(
+        physics: AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: 400,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    // Error state
+    if (provider.error != null && provider.historyItems.isEmpty) {
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: 400,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                const SizedBox(height: 16),
+                Text(
+                  provider.error!,
+                  style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => provider.getHistory(refresh: true),
+                  child: const Text('Coba Lagi'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Empty state
+    if (provider.filteredHistory.isEmpty) {
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: 400,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.history_toggle_off,
+                  size: 48,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Tidak ada riwayat ${provider.selectedFilter}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tarik ke bawah untuk memuat ulang',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // List data
+    return ListView.builder(
+      controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      itemCount:
+          provider.filteredHistory.length + (provider.hasMoreData ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index >= provider.filteredHistory.length) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            alignment: Alignment.center,
+            child: const CircularProgressIndicator(),
+          );
+        }
+
+        final item = provider.filteredHistory[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildHistoryCard(item),
+        );
+      },
     );
   }
 
