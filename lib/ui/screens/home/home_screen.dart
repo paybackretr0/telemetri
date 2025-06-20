@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:telemetri/ui/widgets/custom_card.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -791,7 +790,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 ),
                 Text(
-                  DateFormat('HH:mm').format(activity.startTime),
+                  DateFormatter.formatTime(activity.startTime),
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 ),
               ],

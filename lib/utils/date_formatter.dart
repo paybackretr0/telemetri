@@ -62,7 +62,8 @@ class DateFormatter {
     try {
       final wibDate = _toWIB(date);
 
-      String tanggal = '${wibDate.day} ${_namaBulan[wibDate.month - 1]} ${wibDate.year}';
+      String tanggal =
+          '${wibDate.day} ${_namaBulan[wibDate.month - 1]} ${wibDate.year}';
 
       String waktu =
           '${wibDate.hour.toString().padLeft(2, '0')}:${wibDate.minute.toString().padLeft(2, '0')}';
