@@ -43,7 +43,7 @@ class LoginProvider extends ChangeNotifier {
           ],
           serverClientId:
               PlatformHelper.isAndroid
-                  ? EnvConfig.googleClientId
+                  ? EnvConfig.googleWebClientId
                   : EnvConfig.iosClientId,
         );
       }
