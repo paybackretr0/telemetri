@@ -505,7 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.pushReplacementNamed(
                     context,
                     RouteNames.main,
-                    arguments: {'initialIndex': 3},
+                    arguments: {'initialIndex': 2},
                   );
                 }
               },
