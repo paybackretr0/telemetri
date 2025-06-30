@@ -7,6 +7,7 @@ import 'package:telemetri/ui/screens/profile/profile_provider.dart';
 import 'package:telemetri/ui/screens/permission/permission_provider.dart';
 import 'package:telemetri/ui/screens/delegation/delegation_provider.dart';
 import 'package:telemetri/ui/screens/notification/notification_provider.dart';
+import 'package:telemetri/ui/screens/event/activity_provider.dart';
 import 'package:telemetri/ui/screens/calendar/calendar_provider.dart';
 import 'package:telemetri/ui/screens/home/home_provider.dart';
 import 'package:telemetri/ui/screens/history/history_provider.dart';
@@ -112,6 +113,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CalendarProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => ScanQrProvider()),
+
+        // UAS
+        ChangeNotifierProvider(create: (_) => ActivityProvider()),
       ],
       child: MaterialApp(
         navigatorKey: pushNotificationService?.navigatorKey,

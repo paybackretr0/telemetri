@@ -38,6 +38,12 @@ class ApiConfig {
 
   static const String absen = 'absensi/{code}';
 
+  // UAS
+  static const String getCreatedActivities = 'activities/my';
+  static const String createActivities = 'activities/create';
+  static const String attendanceTypes = 'activities/types';
+  static const String getUsers = 'activities/users';
+
   static const int statusOk = 200;
   static const int statusCreated = 201;
   static const int statusBadRequest = 400;
