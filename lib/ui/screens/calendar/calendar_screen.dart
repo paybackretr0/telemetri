@@ -43,16 +43,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  Future<void> _refreshToken() async {
-    final success = await _provider.refreshToken();
-
-    if (success) {
-      await _loadEvents();
-    } else if (_provider.needsReauthentication) {
-      _showReauthenticationDialog();
-    }
-  }
-
   void _generateEventsMap() {
     _events = {};
 
@@ -280,7 +270,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
-                            onPressed: _refreshToken,
+                            onPressed: _loadEvents,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Theme.of(context).primaryColor,
                               foregroundColor: Colors.white,

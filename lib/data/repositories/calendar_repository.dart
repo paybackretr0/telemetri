@@ -17,6 +17,7 @@ class CalendarRepository {
         return ApiResponse(
           success: false,
           message: 'Tidak ada token autentikasi',
+          needRelogin: true,
         );
       }
 
@@ -43,49 +44,44 @@ class CalendarRepository {
         if (data['success'] == true) {
           final List<dynamic> eventsJson = data['events'] ?? data['data'] ?? [];
 
-          if (eventsJson.isEmpty) {
-            return ApiResponse(
-              success: true,
-              message: 'Tidak ada data kalender',
-              data: [],
-            );
-          }
-
           final List<CalendarEvent> events =
               eventsJson.map((json) => CalendarEvent.fromJson(json)).toList();
 
           return ApiResponse(
             success: true,
-            message: 'Berhasil mendapatkan data kalender',
+            message: data['message'] ?? 'Berhasil mendapatkan data kalender',
             data: events,
           );
         } else {
           return ApiResponse(
             success: false,
             message: data['message'] ?? 'Gagal mendapatkan data kalender',
+            needRelogin: data['need_relogin'] ?? false,
           );
         }
-      } else if (response.statusCode == ApiConfig.statusUnauthorized) {
-        return ApiResponse(
-          success: false,
-          message: 'Sesi telah berakhir, silakan login kembali',
-        );
       } else {
         try {
           final data = jsonDecode(response.body);
           return ApiResponse(
             success: false,
             message: data['message'] ?? 'Terjadi kesalahan pada server',
+            needRelogin:
+                data['need_relogin'] ??
+                (response.statusCode == ApiConfig.statusUnauthorized),
           );
         } catch (e) {
           return ApiResponse(
             success: false,
-            message: 'Terjadi kesalahan pada server: ${response.statusCode}',
+            message: 'Terjadi kesalahan server: Status ${response.statusCode}',
+            needRelogin: response.statusCode == ApiConfig.statusUnauthorized,
           );
         }
       }
     } catch (e) {
-      return ApiResponse(success: false, message: 'Terjadi kesalahan: $e');
+      return ApiResponse(
+        success: false,
+        message: 'Terjadi kesalahan jaringan: $e',
+      );
     }
   }
 }

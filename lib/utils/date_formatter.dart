@@ -48,6 +48,22 @@ class DateFormatter {
     }
   }
 
+  static String formatTimeRangeDuty(DateTime startTime, DateTime endTime) {
+    try {
+      final wibStartTime = _toWIB(startTime);
+      final wibEndTime = _toWIB(endTime);
+
+      String waktuMulai =
+          '${wibStartTime.hour.toString().padLeft(2, '0')}:${wibStartTime.minute.toString().padLeft(2, '0')}';
+      String waktuSelesai =
+          '${wibEndTime.hour.toString().padLeft(2, '0')}:${wibEndTime.minute.toString().padLeft(2, '0')}';
+
+      return '$waktuMulai - $waktuSelesai WIB';
+    } catch (e) {
+      return 'Waktu tidak valid';
+    }
+  }
+
   static String formatTime(DateTime time) {
     try {
       final wibTime = _toWIB(time);
