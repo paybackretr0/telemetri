@@ -25,13 +25,7 @@ class _MainContainerState extends State<MainContainer> {
   late int _bottomNavIndex;
   bool _isLoggingOut = false;
 
-  final List<String> _pageTitles = [
-    'Dashboard',
-    'Kalender',
-    'Scan QR',
-    'Riwayat',
-    'Profil',
-  ];
+  final List<String> _pageTitles = ['Beranda', 'Kalender', 'Riwayat', 'Profil'];
 
   final List<String> _webPageTitles = [
     'Dashboard',
@@ -101,6 +95,7 @@ class _MainContainerState extends State<MainContainer> {
         _bottomNavIndex = index;
       });
 
+      // Handle QR Scanner (middle button)
       if (index == 2) {
         Navigator.push(
           context,
@@ -109,17 +104,42 @@ class _MainContainerState extends State<MainContainer> {
         return;
       }
 
+      // Map bottom navigation indices to screen indices
       int screenIndex;
       if (index < 2) {
+        // Home (0) and Calendar (1) map directly
         screenIndex = index;
+      } else if (index == 3) {
+        // History button maps to screen index 2
+        screenIndex = 2;
+      } else if (index == 4) {
+        // Profile button maps to screen index 3
+        screenIndex = 3;
       } else {
-        screenIndex = index - 1;
+        screenIndex = 0; // fallback
       }
 
       setState(() {
         _selectedIndex = screenIndex;
       });
     }
+  }
+
+  void _navigateToIndex(int screenIndex) {
+    setState(() {
+      _selectedIndex = screenIndex;
+
+      // Update bottom navigation index based on screen index
+      if (screenIndex == 0) {
+        _bottomNavIndex = 0; // Home
+      } else if (screenIndex == 1) {
+        _bottomNavIndex = 1; // Calendar
+      } else if (screenIndex == 2) {
+        _bottomNavIndex = 3; // History
+      } else if (screenIndex == 3) {
+        _bottomNavIndex = 4; // Profile
+      }
+    });
   }
 
   Future<void> _handleLogout() async {
@@ -396,7 +416,7 @@ class _MainContainerState extends State<MainContainer> {
 
   Widget _buildMobileLayout() {
     return Scaffold(
-      appBar: CustomAppBar(title: _pageTitles[_bottomNavIndex]),
+      appBar: CustomAppBar(title: _pageTitles[_selectedIndex]),
       body: IndexedStack(index: _selectedIndex, children: _mobileScreens),
       bottomNavigationBar: CustomBottomNavigation(
         selectedIndex: _bottomNavIndex,
@@ -404,5 +424,24 @@ class _MainContainerState extends State<MainContainer> {
         showLabels: false,
       ),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Check if we received navigation arguments
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (args != null && args['initialIndex'] != null) {
+      final targetIndex = args['initialIndex'] as int;
+
+      // Use post frame callback to ensure the widget is built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _navigateToIndex(targetIndex);
+        }
+      });
+    }
   }
 }

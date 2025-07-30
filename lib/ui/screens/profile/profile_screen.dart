@@ -207,7 +207,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     provider.user!.dutySchedules!.isNotEmpty
                                 ? provider.user!.dutySchedules!.map((schedule) {
                                   final timeRange =
-                                      DateFormatter.formatTimeRange(
+                                      DateFormatter.formatTimeRangeDuty(
                                         schedule.startTime,
                                         schedule.endTime,
                                       );

@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../data/models/calendar_model.dart';
 import '../../../data/repositories/calendar_repository.dart';
-import '../../../data/repositories/auth_repository.dart';
 
 class CalendarProvider extends ChangeNotifier {
   final CalendarRepository _repository = CalendarRepository();
-  final AuthRepository _authRepository = AuthRepository();
 
   bool _isLoading = false;
   String? _error;
@@ -34,25 +32,10 @@ class CalendarProvider extends ChangeNotifier {
         _events = response.data ?? [];
         _formatEvents();
       } else {
-        if (response.message.contains('401') ||
-            response.message.contains('UNAUTHENTICATED') ||
-            response.message.contains('Invalid Credentials') ||
-            response.message.contains('authentication credential')) {
-          final refreshResponse = await _authRepository.refreshGoogleToken();
-
-          if (refreshResponse.success) {
-            final retryResponse = await _repository.getEvents(email: email);
-
-            if (retryResponse.success) {
-              _events = retryResponse.data ?? [];
-              _formatEvents();
-              return;
-            }
-          }
-
+        if (response.needRelogin == true) {
           _needsReauthentication = true;
           throw Exception(
-            'Autentikasi Google Calendar tidak valid. Silakan login kembali.',
+            'Sesi Google telah berakhir. Silakan hubungkan kembali akun Google Anda.',
           );
         }
         throw Exception(response.message);
@@ -63,32 +46,6 @@ class CalendarProvider extends ChangeNotifier {
         errorMessage = errorMessage.substring("Exception: ".length);
       }
       _setError('Gagal mendapatkan data kalender: $errorMessage');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<bool> refreshToken() async {
-    try {
-      _setLoading(true);
-      _clearError();
-
-      final refreshResponse = await _authRepository.refreshGoogleToken();
-
-      if (refreshResponse.success) {
-        _needsReauthentication = false;
-        return true;
-      } else {
-        _needsReauthentication = true;
-        throw Exception('Gagal memperbarui token: ${refreshResponse.message}');
-      }
-    } catch (e) {
-      String errorMessage = e.toString();
-      if (errorMessage.startsWith("Exception: ")) {
-        errorMessage = errorMessage.substring("Exception: ".length);
-      }
-      _setError('Gagal refresh token: $errorMessage');
-      return false;
     } finally {
       _setLoading(false);
     }

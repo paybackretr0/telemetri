@@ -42,9 +42,7 @@ class LoginProvider extends ChangeNotifier {
             'https://www.googleapis.com/auth/calendar.events',
           ],
           serverClientId:
-              PlatformHelper.isAndroid
-                  ? EnvConfig.googleWebClientId
-                  : EnvConfig.iosClientId,
+              PlatformHelper.isAndroid ? EnvConfig.googleWebClientId : null,
         );
       }
 
