@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "288919707199",
-    "project_id": "telemetri-a2c59",
-    "storage_bucket": "telemetri-a2c59.firebasestorage.app"
+    "project_number": "542504275834",
+    "project_id": "telemetri-release",
+    "storage_bucket": "telemetri-release.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:288919707199:android:76891213d3bf55f395e28a",
+        "mobilesdk_app_id": "1:542504275834:android:43bd8bbcbc08154ebe50c3",
         "android_client_info": {
-          "package_name": "com.example.telemetri"
+          "package_name": "com.neotelemetri.telemetri"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCIYLDO40tapv5d-rnkW-xCqjGDGQXJq3s"
+          "current_key": "AIzaSyAK7KAWrP4AC7D5r4irAa9j_0tW6doAxT4"
         }
       ],
       "services": {
